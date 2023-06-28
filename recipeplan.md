@@ -64,24 +64,25 @@ GET /recipes - to display recipes on the screen
 POST /recipes - to add a recipe
 
 ```json
-{  
-  "title" : "",
-  "ingredients" : [
+{
+  "title": "Recipe title",
+  "servings": "4",
+  "ingredients": [
     {
-        "ing1" : "",
-        "ing2" : "",
+      "amount": "1 cup",
+      "ingredient": "milk",
     },
+    {
+      "amount": "1 tsp",
+      "ingredient": "sugar",
+    }
   ],
-  "servings" : "",
-  "instructions" : [
-    {
-        "ins1" : "",
-        "ins2" : "",
-    },
+  "instructions": [
+    "inst1",
+    "inst2"
   ]
 }
 ```
-
 DELETE /recipes
 
 ```json
@@ -93,23 +94,25 @@ DELETE /recipes
 PUT /recipes/[id] - to edit a recipe
 
 ```json
-{  
-  "id" : "[id]",
-  "title" : "updated title",
-  "ingredients" : [
-    {
-        "ing1" : "updated ing1",
-        "ing2" : "updated ing2",
+ {
+        "id": [id],
+        "title": "Updated title",
+        "servings": "Updated servings",
+        "ingredients": [
+            {
+            "amount": "updated",
+            "ingredient": "updated",
+            },
+            {
+            "amount": "updated",
+            "ingredient": "updated",
+            }
+        ],
+        "instructions": [
+            "updated inst1",
+            "updated inst2"
+        ]
     },
-  ],
-  "servings" : "updated servings",
-  "instructions" : [
-    {
-        "ins1" : "updated ins1",
-        "ins2" : "updated ins2",
-    },
-  ]
-}
 ```
 
 

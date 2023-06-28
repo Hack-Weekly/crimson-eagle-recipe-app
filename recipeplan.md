@@ -11,7 +11,7 @@ Build a single web page that displays information from the API provided by the B
 
 The webpage should also include a form to add information to the API. This should be either linked with a button from the main page or displayed on the same page as the recipes.
 
-Decisions about styling and layout are completely up to the front-end team. The project is being compelted using React in the NextJS framework. CSS is up to the front-end team to decide. 
+Decisions about styling and layout are completely up to the front-end team. The project is being completed using React in the NextJS framework. CSS is up to the front-end team to decide. 
 
 The API endpoints that will be created will be displayed in the next section in JSON format for sending API requests.
 

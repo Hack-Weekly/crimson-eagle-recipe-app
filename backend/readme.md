@@ -32,4 +32,10 @@ erDiagram
     integer recipe_id
     integer ingredient_id
   }
+
+  INGREDIENT {
+    integer id
+    varchar unit
+    varchar label
+  }
 ```

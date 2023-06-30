@@ -1,3 +1,8 @@
 .env*.local
 .env
-/target
+
+# Rust Build Files
+target/
+
+# Vim Swap files
+*.swp

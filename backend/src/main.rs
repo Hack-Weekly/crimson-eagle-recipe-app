@@ -9,7 +9,12 @@ fn hello() -> &'static str {
     "Hello, world!"
 }
 
+#[get("/recipe")]
+fn recipe() -> &'static str {
+    "Recipe page"
+}
+
 #[launch]
 fn rocket() -> Rocket<Build> {
-    rocket::build().mount("/", routes![hello])
+    rocket::build().mount("/", routes![hello, recipe])
 }

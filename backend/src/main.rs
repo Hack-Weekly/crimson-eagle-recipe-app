@@ -14,8 +14,8 @@ mod schema;
 
 #[cfg(test)] mod tests;
 
-#[get("/")]
-fn index() -> Json<Vec<Recipes>> {
+#[get("/recipes")]
+fn recipe() -> Json<Vec<Recipes>> {
     let connection = &mut database::establish_connection();
     recipes.load::<Recipes>(connection).map(Json).expect("Error loading recipes")
 }
@@ -40,5 +40,5 @@ pub fn addrecipes(addrecipes: Json<RecipesInput>) -> Json<Recipes> {
 
 #[launch]
 fn rocket() -> Rocket<Build> {
-    rocket::build().mount("/", routes![index, addrecipes])
+    rocket::build().mount("/", routes![recipe, addrecipes])
 }

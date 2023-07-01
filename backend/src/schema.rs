@@ -1,14 +1,6 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
-    ingredients (id) {
-        id -> Int4,
-        unit -> Nullable<Varchar>,
-        label -> Nullable<Varchar>,
-    }
-}
-
-diesel::table! {
     instructions (id) {
         id -> Int4,
         instruction -> Nullable<Varchar>,
@@ -37,7 +29,6 @@ diesel::table! {
 }
 
 diesel::allow_tables_to_appear_in_same_query!(
-    ingredients,
     instructions,
     recipe_ingredients,
     recipes,

@@ -1,0 +1,9 @@
+#Environment Variables
+.env*.local
+.env
+
+# Rust Build Files
+target/
+
+# Vim Swap files
+*.swp

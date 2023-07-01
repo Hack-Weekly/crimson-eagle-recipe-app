@@ -1,4 +1,14 @@
-Entity Relationship diagram of the data
+# Backend Bible
+Here, we collect the choices, tips, tricks and guides we have used or might be useful in the backend
+
+## Stack
+We use 
+- Rust
+- [Rocket](https://rocket.rs), a web framework for rust
+
+- [Diesel](https://diesel.rs/), as an ORM 
+
+## Entity Relationship diagram of the data
 ```mermaid
 erDiagram
 

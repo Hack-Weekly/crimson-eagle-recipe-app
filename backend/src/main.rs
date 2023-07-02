@@ -2,6 +2,7 @@
 extern crate rocket;
 
 use diesel::prelude::*;
+use rocket::response::status::NoContent;
 use rocket::{Build, Rocket};
 use rocket::serde::json::Json;
 
@@ -37,8 +38,20 @@ pub fn addrecipes(addrecipes: Json<RecipesInput>) -> Json<Recipes> {
     )
 }
 
+#[delete("/recipes/<del_id>")]
+pub fn delete(del_id: i32) -> NoContent {
+    use crate::schema::recipes;
+
+    let connection = &mut database::establish_connection();
+    diesel::delete(recipes::table.find(del_id))
+        .execute(connection)
+        .expect("Error deleting recipe");
+
+    NoContent
+}
+
 
 #[launch]
 fn rocket() -> Rocket<Build> {
-    rocket::build().mount("/", routes![recipe, addrecipes])
+    rocket::build().mount("/", routes![recipe, addrecipes, delete])
 }

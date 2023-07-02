@@ -83,19 +83,19 @@ POST /recipes - to add a recipe
   ]
 }
 ```
-DELETE /recipes
+DELETE /recipes/\<id>
 
 ```json
 {
-    "id" : "",
+    "id" : id,
 }
 ```
 
-PUT /recipes/[id] - to edit a recipe
+PUT /recipes/\<id> - to edit a recipe
 
 ```json
  {
-        "id": [id],
+        "id": id,
         "title": "Updated title",
         "servings": "Updated servings",
         "ingredients": [

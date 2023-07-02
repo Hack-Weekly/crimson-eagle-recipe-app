@@ -1,7 +1,7 @@
 CREATE TABLE recipes (
-    id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     title VARCHAR NOT NULL,
     servings VARCHAR NOT NULL,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )

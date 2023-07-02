@@ -1,5 +1,5 @@
 CREATE TABLE ingredients (
-    id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     unit VARCHAR,
     label VARCHAR
 )

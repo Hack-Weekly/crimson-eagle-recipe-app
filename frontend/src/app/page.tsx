@@ -2,7 +2,7 @@
 import SearchBar from "@/components/SearchBar";
 import { Icon } from "@iconify/react";
 import Image from "next/image";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect} from "react";
 
 interface Recipe {
   id: number;
@@ -18,6 +18,7 @@ export default function Home() {
   const [recipeTitle, setRecipeTitle] = useState("");
   const [recipeId, setRecipeId] = useState("");
   const [recipeServings, setRecipeServings] = useState("");
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -31,7 +32,7 @@ export default function Home() {
     };
 
     fetchData();
-  }, []);
+    }, []);
 
   const handleAddRecipeClick = () => {
     setShowForm(true);
@@ -47,7 +48,7 @@ export default function Home() {
     };
   
     try {
-      const response = await fetch("https://crimson-eagles-recipe-app.onrender.com/addrecipes", {
+      const response = await fetch("https://crimson-eagles-recipe-app.onrender.com/recipes", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -86,7 +87,7 @@ export default function Home() {
         </button>
       </div>
 
-    <div className="flex justify-center gap-8">
+    <div className="flex justify-center gap-8 pl-4">
       <div className="w-1/4 bg-red-500 text-white flex flex-col items-center justify-start rounded-lg p-6 h-screen">
           <h2 className="text-2xl font-bold mt-4">Filters</h2>
       </div>
@@ -96,6 +97,7 @@ export default function Home() {
             <div
               key={recipe.id}
               className="bg-white rounded-lg shadow-lg p-4 sm:p-6 w-full sm:w-1/2 md:w-1/3 lg:w-1/4 border border-black mb-8"
+              onClick={() => setSelectedRecipe(recipe)}
             >
               <h2 className="text-2xl font-bold mb-2">{recipe.title}</h2>
               <p className="text-lg mb-2">Servings: {recipe.servings}</p>
@@ -112,9 +114,14 @@ export default function Home() {
     </div>
 
     {showForm && (
-        <div className="fixed top-0 left-0 right-0 bottom-0 bg-gray-200 bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="fixed top-0 left-0 right-0 bottom-0 bg-gray-800 bg-opacity-40 flex justify-center items-center">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-3/4 h-3/4">
+            <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold mb-4">Add Recipe</h2>
+            <button className="font-bold text-2xl pr-8" onClick={() => setShowForm(false)}>
+            X
+            </button>
+            </div>
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
                 <label htmlFor="title" className="block font-bold mb-2">
@@ -161,6 +168,27 @@ export default function Home() {
             </form>
             <button className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md mt-4" onClick={() => setShowForm(false)}>
               Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {selectedRecipe && (
+        <div className="fixed top-0 left-0 right-0 bottom-0 bg-gray-800 bg-opacity-40 flex justify-center items-center">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-2/4 h-2/4 flex flex-col items-center justify-center">
+            <h2 className="text-2xl font-bold mb-4">{selectedRecipe.title}</h2>
+            <p className="text-lg mb-2">Servings: {selectedRecipe.servings}</p>
+            <p className="text-sm mb-2">
+              Created At: {selectedRecipe.created_at || "N/A"}
+            </p>
+            <p className="text-sm">
+              Updated At: {selectedRecipe.updated_at || "N/A"}
+            </p>
+            <button
+              className="bg-red-500 text-white px-4 py-2 rounded-md mt-4"
+              onClick={() => setSelectedRecipe(null)}
+            >
+              Close
             </button>
           </div>
         </div>

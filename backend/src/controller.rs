@@ -1,5 +1,6 @@
 use diesel::prelude::*;
 use rocket::serde::json::Json;
+use rocket::http::Status;
 
 use crate::database;
 use crate::models::*;
@@ -30,17 +31,16 @@ pub fn addrecipes(addrecipes: Json<RecipesInput>) -> Json<Recipes> {
 }
 
 #[delete("/recipes/<del_id>")]
-pub fn delete(del_id: i32) -> String {
+pub fn delete(del_id: i32) -> Result<Status, Status> {
     use crate::schema::recipes;
 
     let connection = &mut database::establish_connection();
     let num_deleted = diesel::delete(recipes::table.find(del_id))
         .execute(connection)
-        .expect("Error deleting recipe");
+        .map_err(|_| Status::InternalServerError)?;
 
-    if num_deleted == 0 {
-        "No recipe with that id found\n".to_string()
-    } else{
-        "Successfully deleted\n".to_string()
+    match num_deleted {
+        0 => Err(Status::NotFound),
+        _ => Ok(Status::Ok),
     }
 }

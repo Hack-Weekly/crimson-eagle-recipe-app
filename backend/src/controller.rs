@@ -52,21 +52,23 @@ pub fn single_recipe(recipe_id: i32) -> Result<Json<Recipes>, Status> {
 }
 
 #[post("/recipes", data = "<addrecipes>")]
-pub fn addrecipes(addrecipes: Json<RecipesInput>) -> Json<Recipes> {
+pub fn addrecipes(addrecipes: Json<RecipesInput>) -> Result<Json<Recipes>, Status> {
     use crate::schema::recipes;
 
     let connection = &mut database::establish_connection();
-    diesel::insert_into(recipes::table)
+    match diesel::insert_into(recipes::table)
         .values(addrecipes.into_inner())
-        .execute(connection)
-        .expect("Error adding recipe");
+        .execute(connection) {
+            Ok(_) => (),
+            Err(_) => return Err(Status::InternalServerError),
+    };
 
-    Json(
-        recipes::table
-            .order(recipes::id.desc())
-            .first(connection)
-            .unwrap(),
-    )
+    match recipes::table
+        .order(recipes::id.desc())
+        .first::<Recipes>(connection) {
+            Ok(recipe) => Ok(Json(recipe)),
+            Err(_) => Err(Status::InternalServerError),
+    }
 }
 
 #[delete("/recipes/<del_id>")]

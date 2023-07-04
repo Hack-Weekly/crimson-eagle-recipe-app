@@ -2,9 +2,7 @@
 import SearchBar from "@/components/SearchBar";
 import { Icon } from "@iconify/react";
 import Image from "next/image";
-import React, { useState, useEffect } from "react";
-import DeleteButton from "@/components/DeleteButton";
-
+import React, { useState, useEffect} from "react";
 
 interface Recipe {
   id: number;
@@ -83,7 +81,6 @@ export default function Home() {
           <Icon icon="basil:add-solid" className="w-8 h-8" />
           <span className="text-lg font-bold"> Add recipe</span>
         </button>
-        <DeleteButton />
         <button className="flex justify-between items-center px-4 py-5 h-6 w-40 bg-red-500 rounded-2xl text-white">
           <Icon icon="subway:mark-2" className="w-8 h-6" />
           <span className="text-lg font-bold"> Bookmarks</span>

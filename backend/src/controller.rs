@@ -14,16 +14,19 @@ pub fn recipe() -> Json<Vec<Recipes>> {
 }
 
 #[get("/recipes/search/<query>")]
-pub fn search(query: String) -> Json<Vec<Recipes>> {
+pub fn search(query: String) -> Result<Json<Vec<Recipes>>, Status> {
     let connection = &mut database::establish_connection();
 
     let results = recipes
         .filter(title.ilike(format!("%{}%", query)))
-        .load::<Recipes>(connection)
-        .expect("Error loading recipes");
+        .load::<Recipes>(connection);
 
-    Json(results)
+    match results {
+        Ok(results) => Ok(Json(results)),
+        Err(_) => Err(Status::InternalServerError),
+    }
 }
+
 
 #[post("/recipes", data = "<addrecipes>")]
 pub fn addrecipes(addrecipes: Json<RecipesInput>) -> Json<Recipes> {

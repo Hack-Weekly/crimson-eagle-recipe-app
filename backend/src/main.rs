@@ -3,18 +3,24 @@ extern crate rocket;
 
 use rocket::{Build, Rocket};
 
+mod controller;
 mod database;
 mod models;
 mod schema;
-mod controller;
 
-#[cfg(test)] mod tests;
+#[cfg(test)]
+mod tests;
 
 #[launch]
 fn rocket() -> Rocket<Build> {
-    rocket::build().mount("/", routes![
-        controller::recipe, 
-        controller::search,
-        controller::addrecipes, 
-        controller::delete])
+    rocket::build().mount(
+        "/",
+        routes![
+            controller::recipe,
+            controller::search,
+            controller::single_recipe,
+            controller::addrecipes,
+            controller::delete
+        ],
+    )
 }

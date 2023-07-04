@@ -13,6 +13,18 @@ pub fn recipe() -> Json<Vec<Recipes>> {
     recipes.load::<Recipes>(connection).map(Json).expect("Error loading recipes")
 }
 
+#[get("/recipes/search/<query>")]
+pub fn search(query: String) -> Json<Vec<Recipes>> {
+    let connection = &mut database::establish_connection();
+
+    let results = recipes
+        .filter(title.ilike(format!("%{}%", query)))
+        .load::<Recipes>(connection)
+        .expect("Error loading recipes");
+
+    Json(results)
+}
+
 #[post("/recipes", data = "<addrecipes>")]
 pub fn addrecipes(addrecipes: Json<RecipesInput>) -> Json<Recipes> {
     use crate::schema::recipes;

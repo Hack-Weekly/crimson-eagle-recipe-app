@@ -14,6 +14,7 @@ mod controller;
 fn rocket() -> Rocket<Build> {
     rocket::build().mount("/", routes![
         controller::recipe, 
+        controller::search,
         controller::addrecipes, 
         controller::delete])
 }

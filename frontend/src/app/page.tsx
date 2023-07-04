@@ -2,9 +2,7 @@
 import SearchBar from "@/components/SearchBar";
 import { Icon } from "@iconify/react";
 import Image from "next/image";
-import React, { useState, useEffect } from "react";
-import DeleteButton from "@/components/DeleteButton";
-
+import React, { useState, useEffect} from "react";
 
 interface Recipe {
   id: number;

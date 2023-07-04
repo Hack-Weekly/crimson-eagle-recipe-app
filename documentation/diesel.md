@@ -1,21 +1,31 @@
 # Crimson Eagle - Recipe Site
 
-# Diesel Implementation
+## Diesel Implementation
 
 **Set Dependencies:**
 
 Cargo.toml
+
 ```rust
 [dependencies]
 diesel = { version = "2.1.0", features = ["postgres"] }
 ```
-Setting postgres features streamlines the crate for postgres usage. 
+
+Setting postgres features streamlines the crate for postgres usage.
 
 **Install Diesel CLI**
-```
+
+```bash
 cargo install diesel_cli --no-default-features --features postgres
 ```
+
 Again streamlined for postgres
+
+It needs PostgreSQL installed on your OS. Add the environmental variable PQ_LIB_DIR, for example on windows:
+
+```bash
+$ENV:PQ_LIB_DIR="c:\Program Files\PostgreSQL\15\lib"
+```
 
 **Database Url**
 
@@ -24,6 +34,7 @@ Set up the database url in .env
 ```rust
 DATABASE_URL=postgres://username:password@localhost/table-name
 ```
+
 Set this to the database url with the login credentials
 
 **Diesel Setup Command**
@@ -55,6 +66,7 @@ CREATE TABLE example (
   created_by TIMESTAMP
 )
 ```
+
 This will create your migration file.
 
 **Write your roll-back function in down.sql**
@@ -67,7 +79,8 @@ Important: This will allow you to run a command that updates your table if you n
 
 **Run your migration**
 
-```
+```bash
 diesel migration run
 ```
+
 This will generate schema.rs in your src folder and write your schema to the database. Use postgres cli to check it has written correctly.

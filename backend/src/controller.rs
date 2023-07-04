@@ -55,7 +55,6 @@ pub fn addrecipes(addrecipes: Json<RecipesInput>) -> Result<Json<Recipes>, Statu
     }
 }
 
-
 #[delete("/recipes/<del_id>")]
 pub fn delete(del_id: i32) -> Result<Status, Status> {
     use crate::schema::recipes;

@@ -1,7 +1,7 @@
 use super::rocket;
-use rocket::local::blocking::Client;
-use rocket::http::Status;
 use crate::controller;
+use rocket::http::Status;
+use rocket::local::blocking::Client;
 
 #[test]
 fn hello_world() {

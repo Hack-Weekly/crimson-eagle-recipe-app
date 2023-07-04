@@ -6,9 +6,9 @@ use validator::Validate;
 use crate::database;
 use crate::models::*;
 use crate::schema::recipes::dsl::*;
-use crate::schema::*;
 use crate::schema::users::dsl::*;
-use bcrypt::{DEFAULT_COST, hash, verify};
+use crate::schema::*;
+use bcrypt::{hash, verify, DEFAULT_COST};
 
 #[get("/recipes")]
 pub fn recipe() -> Json<Vec<Recipe>> {
@@ -111,7 +111,7 @@ pub fn delete(del_id: i32) -> Result<Status, Status> {
 #[post("/register", data = "<new_user>")]
 pub fn register(new_user: Json<NewUser>) -> Result<Json<User>, Status> {
     new_user.validate().map_err(|_err| Status::BadRequest)?;
-    
+
     let connection = &mut database::establish_connection();
     let hashed_password = hash(new_user.password, DEFAULT_COST).unwrap();
     let new_user = NewUser {
@@ -131,7 +131,7 @@ pub fn register(new_user: Json<NewUser>) -> Result<Json<User>, Status> {
 #[post("/login", data = "<login_user>")]
 pub fn login(login_user: Json<LoginUser>) -> Result<Json<User>, Status> {
     login_user.validate().map_err(|_err| Status::BadRequest)?;
-    
+
     let connection = &mut database::establish_connection();
     let result = users
         .filter(username.eq(&login_user.username))

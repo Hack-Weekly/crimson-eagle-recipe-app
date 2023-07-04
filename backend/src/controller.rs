@@ -13,12 +13,20 @@ pub fn recipe() -> Json<Vec<Recipes>> {
     recipes.load::<Recipes>(connection).map(Json).expect("Error loading recipes")
 }
 
-#[get("/recipes/search/<query>")]
-pub fn search(query: String) -> Result<Json<Vec<Recipes>>, Status> {
+#[get("/recipes/search/<query>?<page>&<per_page>")]
+pub fn search(query: String, page: Option<i64>, per_page: Option<i64>) -> Result<Json<Vec<Recipes>>, Status> {
     let connection = &mut database::establish_connection();
+    
+    let page_number = page.unwrap_or(1);
+    let recipes_per_page = per_page.unwrap_or(10);
+    
+    let offset = (page_number - 1) * recipes_per_page;
 
     let results = recipes
         .filter(title.ilike(format!("%{}%", query)))
+        .order(title.asc())
+        .limit(recipes_per_page)
+        .offset(offset)
         .load::<Recipes>(connection);
 
     match results {
@@ -26,7 +34,6 @@ pub fn search(query: String) -> Result<Json<Vec<Recipes>>, Status> {
         Err(_) => Err(Status::InternalServerError),
     }
 }
-
 
 #[post("/recipes", data = "<addrecipes>")]
 pub fn addrecipes(addrecipes: Json<RecipesInput>) -> Json<Recipes> {

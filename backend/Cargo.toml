@@ -12,3 +12,4 @@ rocket_cors = "0.6.0-alpha2"
 dotenvy = "0.15"
 chrono = { version = "0.4.24", features = ["serde"] }
 bcrypt = "0.14.0"
+validator = { version = "0.16.1", features = ["derive"] }

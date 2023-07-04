@@ -2,6 +2,7 @@ use crate::schema::{instructions, recipes, users};
 use chrono;
 use diesel::prelude::*;
 use rocket::serde::{Deserialize, Serialize};
+use validator::Validate;
 
 #[derive(Serialize, Queryable)]
 #[serde(crate = "rocket::serde")]
@@ -60,20 +61,24 @@ impl From<Recipe> for RecipeResultDTO {
 pub struct User {
     pub id: i32,
     pub username: String,
-    pub password_hash: String,
+    pub password: String,
 }
 
-#[derive(Insertable, Deserialize)]
+#[derive(Insertable, Deserialize, Validate)]
 #[serde(crate = "rocket::serde")]
 #[diesel(table_name = users)]
 pub struct NewUser<'a> {
+    #[validate(length(min = 3, message = "Username must be at least 3 characters long"))]
     pub username: &'a str,
-    pub password_hash: &'a str,
+    #[validate(length(min = 8, message = "Password must be at least 8 characters long"))]
+    pub password: &'a str,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Validate)]
 #[serde(crate = "rocket::serde")]
 pub struct LoginUser {
+    #[validate(length(min = 1, message = "Username is required"))]
     pub username: String,
+    #[validate(length(min = 1, message = "Password is required"))]
     pub password: String,
 }

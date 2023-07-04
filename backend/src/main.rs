@@ -1,6 +1,9 @@
 #[macro_use]
 extern crate rocket;
 
+use dotenvy::dotenv;
+use std::env;
+
 use rocket::http::Method;
 use rocket::{Build, Rocket};
 use rocket_cors::{AllowedHeaders, AllowedOrigins, CorsOptions};
@@ -15,9 +18,10 @@ mod tests;
 
 #[launch]
 fn rocket() -> Rocket<Build> {
-    let allowed_origins = AllowedOrigins::some_exact(&[
-        "https://crimson-eagle-recipe-9002y03jg-crimson-eagle.vercel.app",
-    ]);
+    dotenv().ok();
+    let frontend_url = env::var("FRONTEND_URL").expect("FRONTEND_URL must be set");
+
+    let allowed_origins = AllowedOrigins::some_exact(&[frontend_url]);
 
     let cors = CorsOptions {
         allowed_origins,

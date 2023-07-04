@@ -11,8 +11,8 @@ diesel::table! {
 diesel::table! {
     instructions (id) {
         id -> Int4,
-        instruction -> Nullable<Varchar>,
-        display_order -> Nullable<Int4>,
+        instruction -> Varchar,
+        display_order -> Int4,
         recipe_id -> Int4,
     }
 }

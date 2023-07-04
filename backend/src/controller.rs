@@ -44,31 +44,31 @@ pub fn search(
     }
 }
 
-// #[get("/recipes/<recipe_id>")]
-// pub fn single_recipe(recipe_id: i32) -> Result<Json<RecipeResultDTO>, Status> {
-//     let connection = &mut database::establish_connection();
+#[get("/recipes/<recipe_id>")]
+pub fn single_recipe(recipe_id: i32) -> Result<Json<RecipeResultDTO>, Status> {
+    let connection = &mut database::establish_connection();
 
-//     let inst = match instructions::table
-//         .filter(instructions::recipe_id.eq(recipe_id))
-//         .order(instructions::display_order.asc())
-//         .load::<Instruction>(connection)
-//     {
-//         Ok(res) => res,
-//         Err(_) => return Err(Status::InternalServerError),
-//     };
+    let inst = match instructions::table
+        .filter(instructions::recipe_id.eq(recipe_id))
+        .order(instructions::display_order.asc())
+        .load::<Instruction>(connection)
+    {
+        Ok(res) => res,
+        Err(_) => return Err(Status::InternalServerError),
+    };
 
-//     match recipes.find(recipe_id).first::<Recipe>(connection) {
-//         Ok(res) => {
-//             let mut recipe_with_inst = RecipeResultDTO::from(res);
-//             recipe_with_inst.instructions = inst
-//                 .iter()
-//                 .map(|i| i.instruction.clone())
-//                 .collect::<Vec<String>>();
-//             Ok(Json(recipe_with_inst))
-//         }
-//         Err(_) => Err(Status::NotFound),
-//     }
-// }
+    match recipes.find(recipe_id).first::<Recipe>(connection) {
+        Ok(res) => {
+            let mut recipe_with_inst = RecipeResultDTO::from(res);
+            recipe_with_inst.instructions = inst
+                .iter()
+                .map(|i| i.instruction.clone())
+                .collect::<Vec<String>>();
+            Ok(Json(recipe_with_inst))
+        }
+        Err(_) => Err(Status::NotFound),
+    }
+}
 
 #[post("/recipes", data = "<addrecipes>")]
 pub fn addrecipes(addrecipes: Json<RecipesInput>) -> Result<Json<Recipe>, Status> {

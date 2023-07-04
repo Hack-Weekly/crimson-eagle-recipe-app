@@ -42,7 +42,7 @@ fn rocket() -> Rocket<Build> {
             routes![
                 controller::recipe,
                 controller::search,
-                // controller::single_recipe,
+                controller::single_recipe,
                 controller::addrecipes,
                 controller::delete,
                 controller::login,

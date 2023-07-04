@@ -6,6 +6,8 @@ use crate::database;
 use crate::models::*;
 use crate::schema::recipes::dsl::*;
 use crate::schema::*;
+use crate::schema::users::dsl::*;
+use bcrypt::{DEFAULT_COST, hash, verify};
 
 #[get("/recipes")]
 pub fn recipe() -> Json<Vec<Recipe>> {
@@ -42,31 +44,31 @@ pub fn search(
     }
 }
 
-#[get("/recipes/<recipe_id>")]
-pub fn single_recipe(recipe_id: i32) -> Result<Json<RecipeResultDTO>, Status> {
-    let connection = &mut database::establish_connection();
+// #[get("/recipes/<recipe_id>")]
+// pub fn single_recipe(recipe_id: i32) -> Result<Json<RecipeResultDTO>, Status> {
+//     let connection = &mut database::establish_connection();
 
-    let inst = match instructions::table
-        .filter(instructions::recipe_id.eq(recipe_id))
-        .order(instructions::display_order.asc())
-        .load::<Instruction>(connection)
-    {
-        Ok(res) => res,
-        Err(_) => return Err(Status::InternalServerError),
-    };
+//     let inst = match instructions::table
+//         .filter(instructions::recipe_id.eq(recipe_id))
+//         .order(instructions::display_order.asc())
+//         .load::<Instruction>(connection)
+//     {
+//         Ok(res) => res,
+//         Err(_) => return Err(Status::InternalServerError),
+//     };
 
-    match recipes.find(recipe_id).first::<Recipe>(connection) {
-        Ok(res) => {
-            let mut recipe_with_inst = RecipeResultDTO::from(res);
-            recipe_with_inst.instructions = inst
-                .iter()
-                .map(|i| i.instruction.clone())
-                .collect::<Vec<String>>();
-            Ok(Json(recipe_with_inst))
-        }
-        Err(_) => Err(Status::NotFound),
-    }
-}
+//     match recipes.find(recipe_id).first::<Recipe>(connection) {
+//         Ok(res) => {
+//             let mut recipe_with_inst = RecipeResultDTO::from(res);
+//             recipe_with_inst.instructions = inst
+//                 .iter()
+//                 .map(|i| i.instruction.clone())
+//                 .collect::<Vec<String>>();
+//             Ok(Json(recipe_with_inst))
+//         }
+//         Err(_) => Err(Status::NotFound),
+//     }
+// }
 
 #[post("/recipes", data = "<addrecipes>")]
 pub fn addrecipes(addrecipes: Json<RecipesInput>) -> Result<Json<Recipe>, Status> {
@@ -102,5 +104,42 @@ pub fn delete(del_id: i32) -> Result<Status, Status> {
     match num_deleted {
         0 => Err(Status::NotFound),
         _ => Ok(Status::Ok),
+    }
+}
+
+#[post("/register", data = "<new_user>")]
+pub fn register(new_user: Json<NewUser>) -> Result<Json<User>, Status> {
+    let connection = &mut database::establish_connection();
+    let hashed_password = hash(new_user.password_hash, DEFAULT_COST).unwrap();
+    let new_user = NewUser {
+        username: &new_user.username,
+        password_hash: &hashed_password,
+    };
+
+    match diesel::insert_into(users)
+        .values(new_user)
+        .get_result::<User>(connection)
+    {
+        Ok(user) => Ok(Json(user)),
+        Err(_) => Err(Status::InternalServerError),
+    }
+}
+
+#[post("/login", data = "<login_user>")]
+pub fn login(login_user: Json<LoginUser>) -> Result<Json<User>, Status> {
+    let connection = &mut database::establish_connection();
+    let result = users
+        .filter(username.eq(&login_user.username))
+        .first::<User>(connection);
+
+    match result {
+        Ok(user) => {
+            if verify(&login_user.password, &user.password_hash).unwrap() {
+                Ok(Json(user))
+            } else {
+                Err(Status::Unauthorized)
+            }
+        }
+        Err(_) => Err(Status::NotFound),
     }
 }

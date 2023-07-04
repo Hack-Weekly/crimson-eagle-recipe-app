@@ -1,4 +1,4 @@
-use crate::schema::{instructions, recipes};
+use crate::schema::{instructions, recipes, users};
 use chrono;
 use diesel::prelude::*;
 use rocket::serde::{Deserialize, Serialize};
@@ -53,4 +53,27 @@ impl From<Recipe> for RecipeResultDTO {
             updated_at: r.updated_at,
         }
     }
+}
+
+#[derive(Queryable, Serialize)]
+#[serde(crate = "rocket::serde")]
+pub struct User {
+    pub id: i32,
+    pub username: String,
+    pub password_hash: String,
+}
+
+#[derive(Insertable, Deserialize)]
+#[serde(crate = "rocket::serde")]
+#[diesel(table_name = users)]
+pub struct NewUser<'a> {
+    pub username: &'a str,
+    pub password_hash: &'a str,
+}
+
+#[derive(Deserialize)]
+#[serde(crate = "rocket::serde")]
+pub struct LoginUser {
+    pub username: String,
+    pub password: String,
 }

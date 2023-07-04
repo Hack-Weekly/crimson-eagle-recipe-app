@@ -11,3 +11,4 @@ rocket = { version = "0.5.0-rc.2", features = ["json"] }
 rocket_cors = "0.6.0-alpha2"
 dotenvy = "0.15"
 chrono = { version = "0.4.24", features = ["serde"] }
+bcrypt = "0.14.0"

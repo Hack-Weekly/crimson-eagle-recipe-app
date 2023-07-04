@@ -11,8 +11,8 @@ diesel::table! {
 diesel::table! {
     instructions (id) {
         id -> Int4,
-        instruction -> Varchar,
-        display_order -> Int4,
+        instruction -> Nullable<Varchar>,
+        display_order -> Nullable<Int4>,
         recipe_id -> Int4,
     }
 }
@@ -36,6 +36,14 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    users (id) {
+        id -> Int4,
+        username -> Varchar,
+        password_hash -> Varchar,
+    }
+}
+
 diesel::joinable!(ingredients -> recipe_ingredients (id));
 diesel::joinable!(instructions -> recipes (recipe_id));
 diesel::joinable!(recipe_ingredients -> recipes (recipe_id));
@@ -45,4 +53,5 @@ diesel::allow_tables_to_appear_in_same_query!(
     instructions,
     recipe_ingredients,
     recipes,
+    users,
 );

@@ -69,26 +69,33 @@ pub fn single_recipe(recipe_id: i32) -> Result<Json<RecipeResultDTO>, Status> {
 }
 
 #[post("/recipes", data = "<addrecipes>")]
-pub fn addrecipes(addrecipes: Json<RecipesInput>) -> Result<Json<Recipe>, Status> {
+pub fn addrecipes(addrecipes: Json<RecipesInput>) -> Result<Json<RecipeResultDTO>, Status> {
     use crate::schema::recipes;
 
     let connection = &mut database::establish_connection();
-    match diesel::insert_into(recipes::table)
+
+    let inserted_recipe = match diesel::insert_into(recipes::table)
         .values(addrecipes.into_inner())
-        .execute(connection)
+        .get_result::<Recipe>(connection)
     {
-        Ok(_) => (),
+        Ok(recipe) => recipe,
         Err(_) => return Err(Status::InternalServerError),
     };
 
-    match recipes::table
-        .order(recipes::id.desc())
-        .first::<Recipe>(connection)
+    let inst = match instructions::table
+        .filter(instructions::recipe_id.eq(inserted_recipe.id))
+        .order(instructions::display_order.asc())
+        .load::<Instruction>(connection)
     {
-        Ok(recipe) => Ok(Json(recipe)),
-        Err(_) => Err(Status::InternalServerError),
-    }
+        Ok(instructions) => instructions,
+        Err(_) => return Err(Status::InternalServerError),
+    };
+
+    let recipe_with_inst = RecipeResultDTO::from_with_instructions(inserted_recipe, inst);
+
+    Ok(Json(recipe_with_inst))
 }
+
 
 #[delete("/recipes/<del_id>")]
 pub fn delete(del_id: i32) -> Result<Status, Status> {

@@ -8,7 +8,9 @@ use rocket::http::Method;
 use rocket::{Build, Rocket};
 use rocket_cors::{AllowedHeaders, AllowedOrigins, CorsOptions};
 
-mod controller;
+mod controllers;
+use controllers::{recipe_controller, user_controller};
+
 mod database;
 mod models;
 mod schema;
@@ -40,13 +42,13 @@ fn rocket() -> Rocket<Build> {
         .mount(
             "/",
             routes![
-                controller::recipe,
-                controller::search,
-                controller::single_recipe,
-                controller::addrecipes,
-                controller::delete,
-                controller::login,
-                controller::register
+                recipe_controller::recipe,
+                recipe_controller::search,
+                recipe_controller::single_recipe,
+                recipe_controller::addrecipes,
+                recipe_controller::delete,
+                user_controller::login,
+                user_controller::register
             ],
         )
         .attach(cors)

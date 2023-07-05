@@ -91,7 +91,18 @@ pub fn addrecipes(addrecipes: Json<RecipesInput>) -> Result<Json<RecipeResultDTO
         Err(_) => return Err(Status::InternalServerError),
     };
 
-    let recipe_with_inst = RecipeResultDTO::from_with_instructions(inserted_recipe, inst);
+    let recipe_with_inst = RecipeResultDTO::from(inserted_recipe);
+    let recipe_with_inst = RecipeResultDTO {
+        id: recipe_with_inst.id,
+        title: recipe_with_inst.title,
+        servings: recipe_with_inst.servings,
+        instructions: inst
+            .iter()
+            .map(|i| i.instruction.clone())
+            .collect::<Vec<String>>(),
+        created_at: recipe_with_inst.created_at,
+        updated_at: recipe_with_inst.updated_at,
+    };
 
     Ok(Json(recipe_with_inst))
 }

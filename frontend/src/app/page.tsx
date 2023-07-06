@@ -5,6 +5,7 @@ import Image from "next/image";
 import React, { useState, useEffect} from "react";
 import DeleteButton from "@/components/DeleteRecipe";
 import AddRecipe from "@/components/AddRecipe";
+import UserAuth from "@/components/UserAuth";
 
 interface Recipe {
   id: number;
@@ -34,7 +35,7 @@ export default function Home() {
 
   return (
     <main className="h-full w-full flex  flex-col content-center justify-center py-10">
-      <div className="flex justify-end items-center gap-12 pr-10 mb-8">
+      <div className="flex justify-end items-center gap-12 pr-10 mb-8 ml-8">
         <h1 className="text-6xl font-extrabold">Foodly</h1>
         <SearchBar />
         <AddRecipe id={0} title={""} servings={""} created_at={null} updated_at={null} />
@@ -43,6 +44,7 @@ export default function Home() {
           <Icon icon="subway:mark-2" className="w-8 h-6" />
           <span className="text-lg font-bold"> Bookmarks</span>
         </button>
+        <UserAuth username={""} password={""}/>
       </div>
 
     <div className="flex justify-center gap-8 pl-4">

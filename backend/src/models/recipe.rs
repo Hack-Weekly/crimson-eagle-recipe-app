@@ -3,6 +3,7 @@ use chrono;
 use diesel::prelude::*;
 use rocket::serde::{Deserialize, Serialize};
 
+
 #[derive(Serialize, Queryable)]
 #[serde(crate = "rocket::serde")]
 pub struct Recipe {

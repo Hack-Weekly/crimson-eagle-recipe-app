@@ -44,7 +44,7 @@ diesel::table! {
     }
 }
 
-diesel::joinable!(ingredients -> recipe_ingredients (id));
+diesel::joinable!(recipe_ingredients -> ingredients (ingredient_id));
 diesel::joinable!(instructions -> recipes (recipe_id));
 diesel::joinable!(recipe_ingredients -> recipes (recipe_id));
 

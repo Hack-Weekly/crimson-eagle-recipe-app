@@ -39,8 +39,8 @@ const DeleteButton: React.FC<DeleteButtonProps> = ({ recipeId }) => {
     return (
         <div>
             {showForm ? (
-                <div className="fixed top-0 left-0 right-0 bottom-0 bg-gray-200 bg-opacity-50 flex justify-center items-center">
-                    <div className="bg-white rounded-lg shadow-lg p-6">
+                <div className="fixed top-0 left-0 right-0 bottom-0 bg-gray-800 bg-opacity-40 flex justify-center items-center">
+                    <div className="bg-white rounded-lg drop-shadow-lg p-6">
                         <h2 className="text-2xl font-bold mb-4">Delete Recipe</h2>
                         <form onSubmit={handleSubmit}>
                             <div className="mb-4">

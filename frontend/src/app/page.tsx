@@ -5,6 +5,7 @@ import Image from "next/image";
 import React, { useState, useEffect} from "react";
 import DeleteButton from "@/components/DeleteRecipe";
 import AddRecipe from "@/components/AddRecipe";
+import UserAuth from "@/components/UserAuth";
 
 interface Recipe {
   id: number;
@@ -34,20 +35,28 @@ export default function Home() {
 
   return (
     <main className="h-full w-full flex  flex-col content-center justify-center py-10">
-      <h1 className="text-6xl font-extrabold text-center mb-10">Foodly</h1>
-      <div className="flex justify-end items-center gap-12 pr-10 mb-8">
+      <div className="flex justify-end items-center gap-12 pr-10 mb-8 ml-8">
+        <h1 className="text-6xl font-extrabold">Foodly</h1>
         <SearchBar />
         <AddRecipe id={0} title={""} servings={""} created_at={null} updated_at={null} />
         <DeleteButton recipeId={2}/>
-        <button className="flex justify-between items-center px-4 py-5 h-6 w-40 bg-red-500 rounded-2xl text-white">
+        <button className="flex justify-between items-center px-4 py-5 h-6 w-40 bg-red-500 rounded-2xl text-white drop-shadow-lg">
           <Icon icon="subway:mark-2" className="w-8 h-6" />
           <span className="text-lg font-bold"> Bookmarks</span>
         </button>
+        <UserAuth username={""} password={""}/>
       </div>
 
     <div className="flex justify-center gap-8 pl-4">
-      <div className="w-1/4 bg-red-500 text-white flex flex-col items-center justify-start rounded-lg p-6 h-screen">
+      <div className="w-1/4 bg-red-500 text-white flex flex-col text-center justify-start rounded-lg p-3 h-screen">
           <h2 className="text-2xl font-bold mt-4">Filters</h2>
+          <div className="flex flex-col justify-start">
+            <label className="flex items-center my-1 text-2xl"><input type = "checkbox" className="h-4 w-4 rounded-sm mr-2 ml-3 flex items-center"/> Vegan </label>
+            <label className="flex items-center my-1 text-2xl"><input type = "checkbox" className="h-4 w-4 rounded-sm mr-2 ml-3 flex items-center"/> High Protein </label>
+            <label className="flex items-center my-1 text-2xl"><input type = "checkbox" className="h-4 w-4 rounded-sm mr-2 ml-3 flex items-center"/> Low Fat </label>
+            <label className="flex items-center my-1 text-2xl"><input type = "checkbox" className="h-4 w-4 rounded-sm mr-2 ml-3 flex items-center"/> Gluten Free </label>
+            <label className="flex items-center my-1 text-2xl"><input type = "checkbox" className="h-4 w-4 rounded-sm mr-2 ml-3 flex items-center"/> Low Carbs </label>
+          </div>
       </div>
       <div className="w-3/4">
         <div className="flex flex-wrap justify-start gap-8">

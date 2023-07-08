@@ -13,7 +13,7 @@ const UserAuth: React.FC<UserInfo> = () => {
     const [userName, setUserName] = useState("");
     const [userPassword, setUserPassword] = useState("");
     const [showForm, setShowForm] = useState<boolean>(false);
-    const [isLoggedIn, setIsLoggedIn] = useState<boolean>(true);
+    const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
 
     const authStart = () => {
         setShowForm(true);

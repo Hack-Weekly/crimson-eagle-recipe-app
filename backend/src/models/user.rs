@@ -75,12 +75,12 @@ pub struct Claims {
 }
 
 #[derive(Debug)]
-pub struct JWT {
+pub struct Jwt {
     pub claims: Claims
 }
 
 #[rocket::async_trait]
-impl<'r> FromRequest<'r> for JWT {
+impl<'r> FromRequest<'r> for Jwt {
     type Error = NetworkResponse;
 
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, NetworkResponse> {
@@ -92,7 +92,7 @@ impl<'r> FromRequest<'r> for JWT {
             None => {
                 let response = Response { 
                     body: ResponseBody::Message(
-                        String::from("Error validating JWT token - No token provided")
+                        String::from("Error validating Jwt token - No token provided")
                     )
                 };
 
@@ -102,12 +102,12 @@ impl<'r> FromRequest<'r> for JWT {
                 )) 
             },
             Some(key) => match is_valid(key) {
-                Ok(claims) => Outcome::Success(JWT {claims}),
+                Ok(claims) => Outcome::Success(Jwt {claims}),
                 Err(err) => match &err.kind() {
                     jsonwebtoken::errors::ErrorKind::ExpiredSignature => {
                         let response = Response { 
                             body: ResponseBody::Message(
-                                format!("Error validating JWT token - Expired Token")
+                                format!("Error validating Jwt token - Expired Token")
                             )
                         };
 
@@ -119,7 +119,7 @@ impl<'r> FromRequest<'r> for JWT {
                     jsonwebtoken::errors::ErrorKind::InvalidToken => {
                         let response = Response {
                             body: ResponseBody::Message(
-                                format!("Error validating JWT token - Invalid Token")
+                                format!("Error validating Jwt token - Invalid Token")
                             )
                         };
 
@@ -131,7 +131,7 @@ impl<'r> FromRequest<'r> for JWT {
                     _ => {
                         let response = Response { 
                             body: ResponseBody::Message(
-                                format!("Error validating JWT token - {}", err)
+                                format!("Error validating Jwt token - {}", err)
                             )
                         };
 

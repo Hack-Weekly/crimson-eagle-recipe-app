@@ -1,5 +1,7 @@
 import { Icon } from "@iconify/react";
 import React, { useState, useEffect } from 'react';
+import DeleteButton from "@/components/DeleteRecipe";
+import AddRecipe from "@/components/AddRecipe";
 
 interface UserInfo {
     username: string;
@@ -11,12 +13,13 @@ const UserAuth: React.FC<UserInfo> = () => {
     const [userName, setUserName] = useState("");
     const [userPassword, setUserPassword] = useState("");
     const [showForm, setShowForm] = useState<boolean>(false);
+    const [isLoggedIn, setIsLoggedIn] = useState<boolean>(true);
 
     const authStart = () => {
         setShowForm(true);
     }
 
-    const handleLogIn = async () => {
+    const logInUser = async () => {
         
         const UserInfo = {
             username: userName,
@@ -24,7 +27,7 @@ const UserAuth: React.FC<UserInfo> = () => {
           };
 
         try {
-            const response = await fetch(`/login`, {
+            const response = await fetch(`https://crimson-eagles-recipe-app.onrender.com/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -34,6 +37,9 @@ const UserAuth: React.FC<UserInfo> = () => {
 
             if (response.ok) {
                 console.log('User loged in successfully');
+                const { jwt_token } = await response.json()
+                localStorage.setItem('jwtToken', jwt_token);
+                setIsLoggedIn(true);
             } else {
                 console.error('Failed to log in user');
             }
@@ -42,25 +48,71 @@ const UserAuth: React.FC<UserInfo> = () => {
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        handleLogIn();
+    const registerUser = async () => {
+        
+        const UserInfo = {
+            username: userName,
+            password: userPassword,
+          };
+
+        try {
+            const response = await fetch(`https://crimson-eagles-recipe-app.onrender.com/register`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(UserInfo),
+            });
+
+            if (response.ok) {
+                console.log('User loged in successfully');
+                const { jwt_token } = await response.json()
+                localStorage.setItem('jwtToken', jwt_token);
+            } else {
+                console.error('Failed to log in user');
+            }
+        } catch (error) {
+            console.error('Network error:', error);
+        }
+    };
+
+    const logOutUser = () => {
+        localStorage.removeItem('jwtToken');
+        setIsLoggedIn(false);
+        console.log('Token cleared, user logged out');
+    }
+
+    const handleLogIn = () => {
+        logInUser();
         setShowForm(false);
         setUserName("");
         setUserPassword("");
     };
 
+    const handleRegister = () => {
+        registerUser();
+        setShowForm(false);
+        setUserName("");
+        setUserPassword("");
+    };
+    //isLoggedIn should be adapted to show extra buttons based on if user is logged in.
     return(
         <div>
-            <button onClick={() => authStart() } className="flex justify-center items-center px-2 py-5 h-6 w-40 bg-red-500 rounded-2xl text-white">
-                <Icon icon="basil:user-solid" className="w-7 h-8" />
-                <span className="text-lg font-bold"> Log In </span>
-            </button>
+            {isLoggedIn ? (
+                <button onClick={() => logOutUser()} className="flex justify-center items-center px-2 py-5 h-6 w-40 bg-red-500 rounded-2xl text-white">
+                    <Icon icon="basil:user-solid" className="w-7 h-8" />
+                    <span className="text-lg font-bold"> Log Out </span>
+                </button>
+                ):(
+                <button onClick={() => authStart() } className="flex justify-center items-center px-2 py-5 h-6 w-40 bg-red-500 rounded-2xl text-white">
+                    <Icon icon="basil:user-solid" className="w-7 h-8" />
+                    <span className="text-lg font-bold"> Log In </span>
+                </button>)}
             {showForm && (
                 <div className="fixed top-0 left-0 right-0 bottom-0 bg-gray-800 bg-opacity-40 flex justify-center items-center">
                 <div className="bg-white rounded-lg drop-shadow-lg p-6">
                     <h2 className="text-2xl font-bold mb-4">Delete Recipe</h2>
-                    <form onSubmit={handleSubmit}>
+                    <form>
                         <div className="mb-4">
                             <label htmlFor="recipeID" className="block font-bold mb-2 text-center">
                                 User Name
@@ -89,13 +141,15 @@ const UserAuth: React.FC<UserInfo> = () => {
                         </div>
                         <div className="flex justify-between mr-8 ml-8">
                         <button 
-                            type="submit" 
-                            className="flex justify-between items-center px-2 py-5 h-6 w-38 bg-red-500 rounded-2xl text-white">
+                            type="button" 
+                            className="flex justify-between items-center px-2 py-5 h-6 w-38 bg-red-500 rounded-2xl text-white"
+                            onClick={() => handleLogIn()}>
                             Log In
                         </button>
                         <button 
-                            type="submit" 
-                            className="flex justify-between items-center px-2 py-5 h-6 w-38 bg-red-500 rounded-2xl text-white">
+                            type="button" 
+                            className="flex justify-between items-center px-2 py-5 h-6 w-38 bg-red-500 rounded-2xl text-white"
+                            onClick={() => handleRegister()}>
                             Sign Up
                         </button>
                         </div>

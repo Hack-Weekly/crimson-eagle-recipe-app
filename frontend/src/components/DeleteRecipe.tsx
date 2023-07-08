@@ -12,7 +12,7 @@ const DeleteButton: React.FC<DeleteButtonProps> = ({ recipeId }) => {
 
     const handleDeleteRecipe = async () => {
         try {
-            const response = await fetch(`/recipes/${inputValue}`, {
+            const response = await fetch(`https://crimson-eagles-recipe-app.onrender.com/recipes/${inputValue}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',

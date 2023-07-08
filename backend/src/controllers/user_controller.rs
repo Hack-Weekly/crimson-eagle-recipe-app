@@ -15,7 +15,7 @@ pub fn register(new_user: Json<NewUser>) -> Result<Json<User>, NetworkResponse> 
     let connection = &mut database::establish_connection();
     let hashed_password = hash(new_user.password, DEFAULT_COST).unwrap();
     let new_user = NewUser {
-        username: &new_user.username,
+        username: new_user.username,
         password: &hashed_password,
     };
 
@@ -68,7 +68,7 @@ pub fn login_user(login_user: Json<LoginUser>) -> Result<String, NetworkResponse
 }
 
 #[get("/profile")]
-pub fn profile(key: Result<JWT, NetworkResponse>) -> Result<Json<UserProfile>, NetworkResponse> {
+pub fn profile(key: Result<Jwt, NetworkResponse>) -> Result<Json<UserProfile>, NetworkResponse> {
     let key = key?;
     let user_id = key.claims.subject_id;
     

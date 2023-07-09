@@ -53,6 +53,7 @@ export default function Home() {
         <h1 className="text-6xl font-extrabold">Foodly</h1>
         <SearchBar />
         <AddRecipe onAdd={handleAddRecipe} />
+        <DeleteButton recipeId={2} />
         <button className="flex justify-between items-center px-4 py-5 h-6 w-40 bg-red-500 rounded-2xl text-white drop-shadow-lg">
           <Icon icon="subway:mark-2" className="w-8 h-6" />
           <span className="text-lg font-bold"> Bookmarks</span>
@@ -87,7 +88,6 @@ export default function Home() {
               <p className="text-sm">
                 Updated At: {recipe.updated_at || "N/A"}
               </p>
-              <DeleteButton recipeId={recipe.id} />
             </div>
           ))}
         </div>

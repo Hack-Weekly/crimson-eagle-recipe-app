@@ -32,12 +32,16 @@ export default function Home() {
 
     fetchData();
     }, []);
+  
+  const handleSearch = (searchResults: Recipe[]) => {
+    setRecipes(searchResults);
+  };
 
   return (
     <main className="h-full w-full flex  flex-col content-center justify-center py-10">
       <div className="flex justify-end items-center gap-12 pr-10 mb-8 ml-8">
         <h1 className="text-6xl font-extrabold">Foodly</h1>
-        <SearchBar />
+        <SearchBar onSearch={handleSearch} />
         <AddRecipe id={0} title={""} servings={""} created_at={null} updated_at={null} />
         <DeleteButton recipeId={2} />
         <button className="flex justify-between items-center px-4 py-5 h-6 w-40 bg-red-500 rounded-2xl text-white drop-shadow-lg">

@@ -19,27 +19,29 @@ export default function Home() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
 
+  const fetchData = async () => {
+    try {
+      const response = await fetch("https://crimson-eagles-recipe-app.onrender.com/recipes");
+      const data = await response.json();
+      setRecipes(data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch("https://crimson-eagles-recipe-app.onrender.com/recipes");
-        const data = await response.json();
-        setRecipes(data);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-
     fetchData();
     }, []);
 
+  const handleRecipeDeleted = () => {
+      fetchData(); 
+  };
   return (
     <main className="h-full w-full flex  flex-col content-center justify-center py-10">
       <div className="flex justify-end items-center gap-12 pr-10 mb-8 ml-8">
         <h1 className="text-6xl font-extrabold">Foodly</h1>
         <SearchBar />
         <AddRecipe id={0} title={""} servings={""} created_at={null} updated_at={null} />
-        <DeleteButton recipeId={2} />
+        <DeleteButton onRecipeDeleted={handleRecipeDeleted} />
         <button className="flex justify-between items-center px-4 py-5 h-6 w-40 bg-red-500 rounded-2xl text-white drop-shadow-lg">
           <Icon icon="subway:mark-2" className="w-8 h-6" />
           <span className="text-lg font-bold"> Bookmarks</span>

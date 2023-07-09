@@ -1,13 +1,10 @@
 import { Icon } from "@iconify/react";
-import React, { useState, useEffect } from 'react';
-import DeleteButton from "@/components/DeleteRecipe";
-import AddRecipe from "@/components/AddRecipe";
+import React, { useState } from 'react';
 
 interface UserInfo {
     username: string;
     password: string;
   }
-
 
 const UserAuth: React.FC<UserInfo> = () => {
     const [userName, setUserName] = useState("");

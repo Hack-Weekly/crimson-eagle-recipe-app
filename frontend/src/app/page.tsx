@@ -5,14 +5,7 @@ import React, { useState, useEffect} from "react";
 import DeleteButton from "@/components/DeleteRecipe";
 import AddRecipe from "@/components/AddRecipe";
 import UserAuth from "@/components/UserAuth";
-
-interface Recipe {
-  id: number;
-  title: string;
-  servings: string;
-  created_at: string | null;
-  updated_at: string | null;
-}
+import { Recipe } from "@/lib/types";
 
 export default function Home() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);

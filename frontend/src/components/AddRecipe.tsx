@@ -1,6 +1,6 @@
 import { Icon } from "@iconify/react";
-import React, { useState, useEffect } from 'react';
-import { Recipe } from "../lib/types";
+import React, { useState } from 'react';
+import { Recipe } from "@/lib/types";
 
 const addRecipe: React.FC<Recipe> = () => {
     const [showForm, setShowForm] = useState(false);

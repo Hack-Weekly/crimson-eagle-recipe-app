@@ -73,7 +73,6 @@ export default function Home() {
               <p className="text-sm">
                 Updated At: {recipe.updated_at || "N/A"}
               </p>
-              <DeleteButton recipeId={recipe.id} />
             </div>
           ))}
         </div>

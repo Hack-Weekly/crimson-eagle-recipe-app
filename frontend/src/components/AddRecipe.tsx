@@ -1,126 +1,116 @@
 import { Icon } from "@iconify/react";
-import React, { useState, useEffect } from 'react';
+import React, { useState } from "react";
 
-interface Recipe {
-    id: number;
-    title: string;
-    servings: string;
-    created_at: string | null;
-    updated_at: string | null;
-  }
+interface AddRecipeProps {
+  onAdd: () => void;
+}
 
-const addRecipe: React.FC<Recipe> = () => {
-    const [showForm, setShowForm] = useState(false);
-    const [recipeTitle, setRecipeTitle] = useState("");
-    const [recipeId, setRecipeId] = useState("");
-    const [recipeServings, setRecipeServings] = useState("");
-    const [recipes, setRecipes] = useState<Recipe[]>([]);
+const AddRecipe: React.FC<AddRecipeProps> = ({ onAdd }) => {
+  const [showForm, setShowForm] = useState(false);
+  const [recipeTitle, setRecipeTitle] = useState("");
+  const [recipeServings, setRecipeServings] = useState("");
 
-    const handleAddRecipeClick = () => {
-        setShowForm(true);
-      };
-
-    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-
-        const recipeData = {
-            title: recipeTitle,
-            id: recipeId,
-            servings: recipeServings,
-          };
-
-        try {
-          const response = await fetch("https://crimson-eagles-recipe-app.onrender.com/recipes", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(recipeData),
-          });
-
-          if (response.ok) {
-            const newRecipe = await response.json();
-            setRecipes((prevRecipes) => [...prevRecipes, newRecipe]);
-          } else {
-            console.error("Failed to add recipe:", response.status);
-          }
-        } catch (error) {
-          console.error("Error occurred while adding recipe:", error);
-        }
-
-        setRecipeTitle("");
-        setRecipeId("");
-        setRecipeServings("");
-        setShowForm(false);
-      };
-
-      return (
-          <div>
-          <button className="flex justify-between items-center px-4 py-5 h-6 w-40 bg-red-500 rounded-2xl text-white" onClick={handleAddRecipeClick}>
-          <Icon icon="basil:add-solid" className="w-8 h-8" />
-          <span className="text-lg font-bold"> Add recipe</span>
-          </button>
-          {showForm && (
-            <div className="fixed top-0 left-0 right-0 bottom-0 bg-gray-800 bg-opacity-40 flex justify-center items-center">
-              <div className="bg-white rounded-lg shadow-lg p-6 w-3/4 h-3/4">
-                <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold mb-4">Add Recipe</h2>
-                <button className="font-bold text-2xl pr-8" onClick={() => setShowForm(false)}>
-                X
-                </button>
-                </div>
-                <form onSubmit={handleSubmit}>
-                  <div className="mb-4">
-                    <label htmlFor="title" className="block font-bold mb-2">
-                      Title
-                    </label>
-                    <input
-                      type="text"
-                      id="title"
-                      value={recipeTitle}
-                      onChange={(e) => setRecipeTitle(e.target.value)}
-                      className="border border-gray-300 px-3 py-2 rounded-md w-full"
-                      required
-                    />
-                  </div>
-                  <div className="mb-4">
-                    <label htmlFor="id" className="block font-bold mb-2">
-                      ID
-                    </label>
-                    <input
-                      type="text"
-                      id="id"
-                      value={recipeId}
-                      onChange={(e) => setRecipeId(e.target.value)}
-                      className="border border-gray-300 px-3 py-2 rounded-md w-full"
-                      required
-                    />
-                  </div>
-                  <div className="mb-4">
-                    <label htmlFor="title" className="block font-bold mb-2">
-                      Servings
-                    </label>
-                    <input
-                      type="text"
-                      id="servings"
-                      value={recipeServings}
-                      onChange={(e) => setRecipeServings(e.target.value)}
-                      className="border border-gray-300 px-3 py-2 rounded-md w-full"
-                      required
-                    />
-                  </div>
-                  <button type="submit"className="bg-red-500 text-white px-4 py-2 rounded-md">
-                    Add
-                  </button>
-                </form>
-                <button className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md mt-4" onClick={() => setShowForm(false)}>
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      );
+  const handleAddRecipeClick = () => {
+    setShowForm(true);
   };
-  export default addRecipe;
 
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const recipeData = {
+      title: recipeTitle,
+      servings: recipeServings,
+    };
+
+    try {
+      const response = await fetch(
+        "https://crimson-eagles-recipe-app.onrender.com/recipes",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(recipeData),
+        }
+      );
+
+      if (response.ok) {
+        onAdd();
+      } else {
+        console.error("Failed to add recipe:", response.status);
+      }
+    } catch (error) {
+      console.error("Error occurred while adding recipe:", error);
+    }
+
+    setRecipeTitle("");
+    setRecipeServings("");
+    setShowForm(false);
+  };
+
+  return (
+    <div>
+      <button
+        className="flex justify-between items-center px-4 py-5 h-6 w-40 bg-red-500 rounded-2xl text-white"
+        onClick={handleAddRecipeClick}
+      >
+        <Icon icon="basil:add-solid" className="w-8 h-8" />
+        <span className="text-lg font-bold"> Add recipe</span>
+      </button>
+      {showForm && (
+        <div className="fixed top-0 left-0 right-0 bottom-0 bg-gray-800 bg-opacity-40 flex justify-center items-center">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-3/4 h-3/4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold mb-4">Add Recipe</h2>
+              <button
+                className="font-bold text-2xl pr-8"
+                onClick={() => setShowForm(false)}
+              >
+                X
+              </button>
+            </div>
+            <form onSubmit={handleSubmit}>
+              <div className="mb-4">
+                <label htmlFor="title" className="block font-bold mb-2">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  id="title"
+                  value={recipeTitle}
+                  onChange={(e) => setRecipeTitle(e.target.value)}
+                  className="border border-gray-300 px-3 py-2 rounded-md w-full"
+                  required
+                />
+              </div>
+              <div className="mb-4">
+                <label htmlFor="servings" className="block font-bold mb-2">
+                  Servings
+                </label>
+                <input
+                  type="text"
+                  id="servings"
+                  value={recipeServings}
+                  onChange={(e) => setRecipeServings(e.target.value)}
+                  className="border border-gray-300 px-3 py-2 rounded-md w-full"
+                  required
+                />
+              </div>
+              <button type="submit" className="bg-red-500 text-white px-4 py-2 rounded-md">
+                Add
+              </button>
+            </form>
+            <button
+              className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md mt-4"
+              onClick={() => setShowForm(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AddRecipe;

@@ -44,7 +44,7 @@ export default function Home() {
           <Icon icon="subway:mark-2" className="w-8 h-6" />
           <span className="text-lg font-bold"> Bookmarks</span>
         </button>
-        <UserAuth username={""} password={""}/>
+        <UserAuth />
       </div>
 
     <div className="flex justify-center gap-8 pl-4">

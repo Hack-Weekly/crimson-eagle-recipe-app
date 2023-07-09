@@ -1,19 +1,11 @@
 "use client";
 import SearchBar from "@/components/SearchBar";
 import { Icon } from "@iconify/react";
-import Image from "next/image";
 import React, { useState, useEffect} from "react";
 import DeleteButton from "@/components/DeleteRecipe";
 import AddRecipe from "@/components/AddRecipe";
 import UserAuth from "@/components/UserAuth";
-
-interface Recipe {
-  id: number;
-  title: string;
-  servings: string;
-  created_at: string | null;
-  updated_at: string | null;
-}
+import { Recipe } from "@/lib/types";
 
 export default function Home() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -31,6 +23,10 @@ export default function Home() {
   useEffect(() => {
     fetchData();
     }, []);
+  
+  const handleSearch = (searchResults: Recipe[]) => {
+    setRecipes(searchResults);
+  };
 
   const handleRecipeDeleted = () => {
       fetchData(); 
@@ -39,7 +35,7 @@ export default function Home() {
     <main className="h-full w-full flex  flex-col content-center justify-center py-10">
       <div className="flex justify-end items-center gap-12 pr-10 mb-8 ml-8">
         <h1 className="text-6xl font-extrabold">Foodly</h1>
-        <SearchBar />
+        <SearchBar onSearch={handleSearch} />
         <AddRecipe id={0} title={""} servings={""} created_at={null} updated_at={null} />
         <DeleteButton onRecipeDeleted={handleRecipeDeleted} />
         <button className="flex justify-between items-center px-4 py-5 h-6 w-40 bg-red-500 rounded-2xl text-white drop-shadow-lg">

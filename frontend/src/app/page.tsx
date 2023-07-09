@@ -1,7 +1,6 @@
 "use client";
 import SearchBar from "@/components/SearchBar";
 import { Icon } from "@iconify/react";
-import Image from "next/image";
 import React, { useState, useEffect} from "react";
 import DeleteButton from "@/components/DeleteRecipe";
 import AddRecipe from "@/components/AddRecipe";

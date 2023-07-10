@@ -6,6 +6,7 @@ import DeleteButton from "@/components/DeleteRecipe";
 import AddRecipe from "@/components/AddRecipe";
 import UserAuth from "@/components/UserAuth";
 import { Recipe } from "@/lib/types";
+import { CldUploadWidget } from "next-cloudinary";
 
 export default function Home() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);

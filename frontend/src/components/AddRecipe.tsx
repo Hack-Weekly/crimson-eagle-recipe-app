@@ -1,6 +1,7 @@
 import { Icon } from "@iconify/react";
 import React, { useState } from 'react';
 import { Recipe } from "@/lib/types";
+import { CldUploadWidget } from "next-cloudinary";
 
 const addRecipe: React.FC<Recipe> = () => {
     const [showForm, setShowForm] = useState(false);
@@ -106,6 +107,19 @@ const addRecipe: React.FC<Recipe> = () => {
                     Add
                   </button>
                 </form>
+                <CldUploadWidget uploadPreset="foodly">
+                    {({ open }) => {
+                      function handleOnClick(e: { preventDefault: () => void; }) {
+                      e.preventDefault();
+                      open();
+                      }
+                    return (
+                      <button className="bg-red-500 text-white px-4 py-2 rounded-md" onClick={handleOnClick}>
+                      Upload an Image
+                    </button>
+                      );
+                      }}
+                </CldUploadWidget>
                 <button className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md mt-4" onClick={() => setShowForm(false)}>
                   Cancel
                 </button>

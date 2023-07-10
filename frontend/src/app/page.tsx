@@ -22,7 +22,6 @@ export default function Home() {
 
   useEffect(() => {
     fetchData();
-<<<<<<< HEAD
     }, []);
   
   const handleSearch = (searchResults: Recipe[]) => {
@@ -30,21 +29,6 @@ export default function Home() {
   };
 
   const handleAddRecipe = () => {
-=======
-  }, []);
-
-  const handleAddRecipe = () => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch("https://crimson-eagles-recipe-app.onrender.com/recipes");
-        const data = await response.json();
-        setRecipes(data);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-
->>>>>>> 849c3f1fa10513b7126e3451bf95bbbf2db90d20
     fetchData();
   };
 
@@ -52,11 +36,7 @@ export default function Home() {
     <main className="h-full w-full flex  flex-col content-center justify-center py-10">
       <div className="flex justify-end items-center gap-12 pr-10 mb-8 ml-8">
         <h1 className="text-6xl font-extrabold">Foodly</h1>
-<<<<<<< HEAD
         <SearchBar onSearch={handleSearch} />
-=======
-        <SearchBar />
->>>>>>> 849c3f1fa10513b7126e3451bf95bbbf2db90d20
         <AddRecipe onAdd={handleAddRecipe} />
         <DeleteButton recipeId={2} />
         <button className="flex justify-between items-center px-4 py-5 h-6 w-40 bg-red-500 rounded-2xl text-white drop-shadow-lg">

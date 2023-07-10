@@ -60,6 +60,11 @@ const UserAuth: React.FC = () => {
         setError("");
     }
 
+    useEffect(() => {
+        const jwtToken = localStorage.getItem('jwtToken');
+        setIsLoggedIn(!!jwtToken);
+    }, []);
+
     // Render error message if it exists
     const renderError = error ? <div className="text-red-500 mt-2">{error}</div> : null;
 

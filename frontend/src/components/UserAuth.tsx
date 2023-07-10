@@ -8,44 +8,61 @@ const UserAuth: React.FC = () => {
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
     const [error, setError] = useState<string>("");
 
-    const handleAuth = async (url: string, successMessage: string) => {
-        setError("");
-        const userInfo = {
-            username: userName,
-            password: userPassword,
-        };
-    
+    const makeRequest = async (endpoint: string, UserInfo: {username: string, password: string}) => {
         try {
-            const response = await fetch(url, {
+            const response = await fetch(`https://crimson-eagles-recipe-app.onrender.com/${endpoint}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(userInfo),
+                body: JSON.stringify(UserInfo),
             });
-    
-            if (response.ok) {
-                console.log(successMessage);
-                const { jwt_token } = await response.json()
-                localStorage.setItem('jwtToken', jwt_token);
-                setIsLoggedIn(true);
-                setShowForm(false);
-                setUserName("");
-                setUserPassword("");
-                setError(""); 
-            } else {
-                console.error('Failed to authenticate user');
-                setError('Please enter a valid username and password'); 
-            }
+            return response;
         } catch (error) {
-            console.error('Network error:', error);
             setError('Network error: ' + error);
         }
     };
-
-    const logInUser = () => handleAuth(`https://crimson-eagles-recipe-app.onrender.com/login`, 'User logged in successfully');
-
-    const registerUser = () => handleAuth(`https://crimson-eagles-recipe-app.onrender.com/register`, 'User registered successfully');
+    
+    const logInUser = async () => {
+        setError("");
+        const UserInfo = {
+            username: userName,
+            password: userPassword,
+        };
+        const response = await makeRequest('login', UserInfo);
+    
+        if (response && response.ok) {
+            console.log('User logged in successfully');
+            const { jwt_token } = await response.json();
+            localStorage.setItem('jwtToken', jwt_token);
+            setIsLoggedIn(true);
+            setShowForm(false);
+        } else if (response) {
+            const errorMessage = await response.text();
+            setError(errorMessage);
+        }
+    };
+    
+    const registerUser = async () => {
+        setError("");
+        const UserInfo = {
+            username: userName,
+            password: userPassword,
+        };
+        const response = await makeRequest('register', UserInfo);
+    
+        if (response && response.ok) {
+            console.log('User registered successfully');
+            const { jwt_token } = await response.json();
+            localStorage.setItem('jwtToken', jwt_token);
+            setIsLoggedIn(true);
+            setShowForm(false);
+        } else if (response) {
+            const errorMessage = await response.text();
+            setError(errorMessage);
+        }
+    };
+    
 
     const logOutUser = () => {
         localStorage.removeItem('jwtToken');

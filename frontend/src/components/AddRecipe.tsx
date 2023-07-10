@@ -1,6 +1,5 @@
 import { Icon } from "@iconify/react";
 import React, { useState } from 'react';
-import { Recipe } from "@/lib/types";
 
 interface AddRecipeProps {
   onAdd: () => void;

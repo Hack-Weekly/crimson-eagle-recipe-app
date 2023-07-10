@@ -9,7 +9,7 @@ use rocket::{Build, Rocket};
 use rocket_cors::{AllowedHeaders, AllowedOrigins, CorsOptions};
 
 mod controllers;
-use controllers::{recipe_controller, user_controller};
+use controllers::{recipe_controller, recipe_update_controller, user_controller};
 
 mod database;
 mod jwt;
@@ -52,6 +52,7 @@ fn rocket() -> Rocket<Build> {
                 recipe_controller::search,
                 recipe_controller::single_recipe,
                 recipe_controller::addrecipes,
+                recipe_update_controller::update_recipe,
                 recipe_controller::delete,
                 user_controller::login,
                 user_controller::register,

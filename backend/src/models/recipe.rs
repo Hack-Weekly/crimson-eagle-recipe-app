@@ -1,11 +1,9 @@
-use crate::schema::{instructions, recipes};
+use crate::schema::*;
 use chrono;
 use diesel::prelude::*;
-use rocket::serde::{Deserialize, Serialize};
+use rocket::serde::Serialize;
 
-
-#[derive(Serialize, Queryable)]
-#[serde(crate = "rocket::serde")]
+#[derive(Queryable, Identifiable, Debug, Serialize)]
 pub struct Recipe {
     pub id: i32,
     pub title: String,
@@ -14,16 +12,7 @@ pub struct Recipe {
     pub updated_at: Option<chrono::NaiveDateTime>,
 }
 
-#[derive(Insertable, Deserialize)]
-#[serde(crate = "rocket::serde")]
-#[diesel(table_name = recipes)]
-pub struct RecipesInput {
-    pub title: String,
-    pub servings: String,
-}
-
-#[derive(Queryable, Selectable, Identifiable, Associations, Debug, PartialEq, Serialize)]
-#[serde(crate = "rocket::serde")]
+#[derive(Queryable, Identifiable, Clone, Associations, Debug)] //PartialEq
 #[diesel(belongs_to(Recipe))]
 pub struct Instruction {
     pub id: i32,
@@ -32,26 +21,21 @@ pub struct Instruction {
     pub recipe_id: i32,
 }
 
-#[derive(Serialize)]
-#[serde(crate = "rocket::serde")]
-pub struct RecipeResultDTO {
+#[derive(Queryable, Identifiable, Associations, Clone, Debug)]
+#[diesel(belongs_to(Recipe))]
+#[diesel(belongs_to(Ingredient))]
+#[diesel(table_name = recipe_ingredients)]
+pub struct RecipeIngredient {
     pub id: i32,
-    pub title: String,
-    pub servings: String,
-    pub instructions: Vec<String>,
-    pub created_at: Option<chrono::NaiveDateTime>,
-    pub updated_at: Option<chrono::NaiveDateTime>,
+    pub amount: Option<f32>,
+    pub recipe_id: i32,
+    pub ingredient_id: i32,
 }
 
-impl From<Recipe> for RecipeResultDTO {
-    fn from(r: Recipe) -> Self {
-        Self {
-            id: r.id,
-            title: r.title,
-            servings: r.servings,
-            instructions: Vec::<String>::new(),
-            created_at: r.created_at,
-            updated_at: r.updated_at,
-        }
-    }
+#[derive(Queryable, Identifiable, Clone, Debug)]
+#[diesel(table_name = ingredients)]
+pub struct Ingredient {
+    pub id: i32,
+    pub unit: Option<String>,
+    pub label: String,
 }

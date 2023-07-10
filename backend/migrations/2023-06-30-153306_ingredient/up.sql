@@ -1,5 +1,5 @@
 CREATE TABLE ingredients (
-    id SERIAL PRIMARY KEY REFERENCES recipe_ingredients(id),
+    id SERIAL PRIMARY KEY,
     unit VARCHAR,
     label VARCHAR
 )

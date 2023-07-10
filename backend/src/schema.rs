@@ -4,7 +4,7 @@ diesel::table! {
     ingredients (id) {
         id -> Int4,
         unit -> Nullable<Varchar>,
-        label -> Nullable<Varchar>,
+        label -> Varchar,
     }
 }
 
@@ -20,9 +20,9 @@ diesel::table! {
 diesel::table! {
     recipe_ingredients (id) {
         id -> Int4,
-        amount -> Nullable<Float8>,
+        amount -> Nullable<Float4>,
         recipe_id -> Int4,
-        ingredient_id -> Nullable<Int4>,
+        ingredient_id -> Int4,
     }
 }
 

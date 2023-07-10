@@ -35,7 +35,7 @@ const UserAuth: React.FC = () => {
                 setError(""); 
             } else {
                 console.error('Failed to authenticate user');
-                setError('Failed to authenticate user'); 
+                setError('Please enter a valid username and password'); 
             }
         } catch (error) {
             console.error('Network error:', error);

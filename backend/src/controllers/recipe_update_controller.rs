@@ -7,6 +7,26 @@ use crate::models::*;
 use crate::schema::recipes::dsl::*;
 use crate::schema::*;
 
+/// Update recipe
+///
+/// Update recipe in the database
+#[utoipa::path(
+    put,
+    path = "/recipes",
+    request_body = RecipePutDTO,
+    tag = "recipes",
+    responses(
+        (status = 200, description = "Recipe updated succesfully", body = RecipeResultDTO),
+        (status = 400, description = "Validation error"),
+        (status = 500, description = "Internal Server Error"),
+    ),
+    params(
+        ("recipe_id" = i32, description = "Recipe id"),
+    ),
+    security(
+        ("name" = ["Bearer"])
+    ),
+)]
 #[put("/recipes/<recipe_id>", data = "<updaterecipe>")]
 pub fn update_recipe(
     recipe_id: i32,

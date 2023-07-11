@@ -11,6 +11,7 @@ use rocket_cors::{AllowedHeaders, AllowedOrigins, CorsOptions};
 mod controllers;
 use controllers::{recipe_controller, recipe_update_controller, user_controller};
 
+mod apidoc;
 mod database;
 mod jwt;
 mod models;
@@ -57,7 +58,8 @@ fn rocket() -> Rocket<Build> {
                 user_controller::login,
                 user_controller::register,
                 user_controller::profile,
-                user_controller::change_password
+                user_controller::change_password,
+                apidoc::serve_api_doc,
             ],
         )
         .attach(cors)

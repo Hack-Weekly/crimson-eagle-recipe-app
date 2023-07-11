@@ -20,18 +20,18 @@ pub struct User {
 #[serde(crate = "rocket::serde")]
 #[diesel(table_name = users)]
 pub struct NewUser<'a> {
-    #[validate(length(min = 3, message = "Username must be at least 3 characters long"))]
+    #[validate(length(min = 3))]
     pub username: &'a str,
-    #[validate(length(min = 8, message = "Password must be at least 8 characters long"))]
+    #[validate(length(min = 6))]
     pub password: &'a str,
 }
 
 #[derive(FromForm, Deserialize, Validate)]
 #[serde(crate = "rocket::serde")]
 pub struct LoginUser {
-    #[validate(length(min = 1, message = "Username is required"))]
+    #[validate(length(min = 1))]
     pub username: String,
-    #[validate(length(min = 1, message = "Password is required"))]
+    #[validate(length(min = 1))]
     pub password: String,
 }
 

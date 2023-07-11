@@ -111,6 +111,6 @@ pub fn change_password(key: Result<Jwt, NetworkResponse>, change_password_reques
             .map_err(|_| NetworkResponse::InternalServerError("Failed to update password".to_string()))?;
         Ok(NetworkResponse::Ok("Password changed successfully".to_string()))
     } else {
-        Err(NetworkResponse::BadRequest("Incorrect old password".to_string()))
+        Err(NetworkResponse::BadRequest("Incorrect current password".to_string()))
     }
 }

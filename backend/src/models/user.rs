@@ -42,6 +42,8 @@ pub struct UserProfile {
 
 #[derive(Responder, Debug)]
 pub enum NetworkResponse {
+    #[response(status = 200)]
+    Ok(String),
     #[response(status = 201)]
     Created(String),
     #[response(status = 400)]
@@ -144,4 +146,10 @@ impl<'r> FromRequest<'r> for Jwt {
             },
         }
     }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ChangePasswordRequest {
+    pub old_password: String,
+    pub new_password: String,
 }

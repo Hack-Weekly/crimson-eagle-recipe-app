@@ -13,7 +13,11 @@ pub fn register(new_user: Json<NewUser>) -> Result<Json<User>, NetworkResponse> 
     new_user.validate().map_err(|_err| NetworkResponse::BadRequest("Invalid user input".to_string()))?;
 
     let connection = &mut database::establish_connection();
-    let hashed_password = hash(new_user.password, DEFAULT_COST).unwrap();
+    let hashed_password = match hash(new_user.password, DEFAULT_COST) {
+        Ok(hash) => hash,
+        Err(err) => return Err(NetworkResponse::InternalServerError(format!("Failed to hash password: {}", err))),
+    };
+
     let new_user = NewUser {
         username: new_user.username,
         password: &hashed_password,
@@ -24,7 +28,7 @@ pub fn register(new_user: Json<NewUser>) -> Result<Json<User>, NetworkResponse> 
         .get_result::<User>(connection)
     {
         Ok(user) => Ok(Json(user)),
-        Err(_) => Err(NetworkResponse::InternalServerError("Failed to insert new user".to_string())),
+        Err(err) => Err(NetworkResponse::InternalServerError(format!("Failed to insert new user: {}", err))),
     }
 }
 
@@ -47,23 +51,30 @@ pub fn login_user(login_user: Json<LoginUser>) -> Result<String, NetworkResponse
 
     match result {
         Ok(user) => {
-            if verify(&login_user.password, &user.password).unwrap() {
-                // Generate JWT token
-                match create_jwt(user.id) {
-                    Ok(token) => {
-                        println!("Generated token: {}", token);
-                        Ok(token)
-                    },
-                    Err(err) => {
-                        eprintln!("JWT token generation error: {:?}", err);
-                        Err(NetworkResponse::InternalServerError("Failed to generate JWT token".to_string()))
+            match verify(&login_user.password, &user.password) {
+                Ok(valid) => {
+                    if valid {
+                        // Generate JWT token
+                        match create_jwt(user.id) {
+                            Ok(token) => {
+                                println!("Generated token: {}", token);
+                                Ok(token)
+                            },
+                            Err(err) => {
+                                eprintln!("JWT token generation error: {:?}", err);
+                                Err(NetworkResponse::InternalServerError("Failed to generate JWT token".to_string()))
+                            }
+                        }
+                    } else {
+                        Err(NetworkResponse::Unauthorized("Failed to authorize access".to_string()))
                     }
+                },
+                Err(err) => {
+                    Err(NetworkResponse::InternalServerError(format!("Failed to verify password: {}", err)))
                 }
-            } else {
-                Err(NetworkResponse::Unauthorized("Unauthorized access".to_string()))
             }
         }
-        Err(_) => Err(NetworkResponse::NotFound("User not found".to_string())),
+        Err(err) => Err(NetworkResponse::NotFound(format!("Failed to find user: {}", err))),
     }
 }
 
@@ -101,16 +112,24 @@ pub fn change_password(key: Result<Jwt, NetworkResponse>, change_password_reques
     let user = users
         .filter(id.eq(user_id))
         .first::<User>(connection)
-        .map_err(|_| NetworkResponse::NotFound("User not found".to_string()))?;
+        .map_err(|err| NetworkResponse::NotFound(format!("Failed to find user: {}", err)))?;
 
-    if verify(&change_password_request.old_password, &user.password).unwrap() {
-        let new_password = hash(&change_password_request.new_password, DEFAULT_COST).unwrap();
-        diesel::update(users.filter(id.eq(user_id)))
-            .set(password.eq(new_password))
-            .execute(connection)
-            .map_err(|_| NetworkResponse::InternalServerError("Failed to update password".to_string()))?;
-        Ok(NetworkResponse::Ok("Password changed successfully".to_string()))
-    } else {
-        Err(NetworkResponse::BadRequest("Incorrect current password".to_string()))
+    match verify(&change_password_request.old_password, &user.password) {
+        Ok(valid) => {
+            if valid {
+                let new_password = match hash(&change_password_request.new_password, DEFAULT_COST) {
+                    Ok(hash) => hash,
+                    Err(err) => return Err(NetworkResponse::InternalServerError(format!("Failed to hash password: {}", err))),
+                };
+                diesel::update(users.filter(id.eq(user_id)))
+                    .set(password.eq(new_password))
+                    .execute(connection)
+                    .map_err(|err| NetworkResponse::InternalServerError(format!("Failed to update password: {}", err)))?;
+                Ok(NetworkResponse::Ok("Password successfully changed".to_string()))
+            } else {
+                Err(NetworkResponse::BadRequest("Incorrect current password".to_string()))
+            }
+        },
+        Err(err) => Err(NetworkResponse::InternalServerError(format!("Failed to verify old password: {}", err))),
     }
 }

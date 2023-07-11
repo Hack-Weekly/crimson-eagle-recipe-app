@@ -92,3 +92,25 @@ fn fetch_user_profile(user_id: i32) -> Result<UserProfile, NetworkResponse> {
         username: user.username,
     })
 }
+
+#[put("/profile/change_password", data = "<change_password_request>")]
+pub fn change_password(key: Result<Jwt, NetworkResponse>, change_password_request: Json<ChangePasswordRequest>) -> Result<NetworkResponse, NetworkResponse> {
+    let user_id = key?.claims.subject_id;
+
+    let connection = &mut database::establish_connection();
+    let user = users
+        .filter(id.eq(user_id))
+        .first::<User>(connection)
+        .map_err(|_| NetworkResponse::NotFound("User not found".to_string()))?;
+
+    if verify(&change_password_request.old_password, &user.password).unwrap() {
+        let new_password = hash(&change_password_request.new_password, DEFAULT_COST).unwrap();
+        diesel::update(users.filter(id.eq(user_id)))
+            .set(password.eq(new_password))
+            .execute(connection)
+            .map_err(|_| NetworkResponse::InternalServerError("Failed to update password".to_string()))?;
+        Ok(NetworkResponse::Ok("Password changed successfully".to_string()))
+    } else {
+        Err(NetworkResponse::BadRequest("Incorrect current password".to_string()))
+    }
+}

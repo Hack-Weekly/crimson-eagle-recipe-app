@@ -56,7 +56,8 @@ fn rocket() -> Rocket<Build> {
                 recipe_controller::delete,
                 user_controller::login,
                 user_controller::register,
-                user_controller::profile
+                user_controller::profile,
+                user_controller::change_password
             ],
         )
         .attach(cors)

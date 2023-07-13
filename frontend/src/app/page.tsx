@@ -85,22 +85,16 @@ export default function Home() {
     <main className="h-full w-full flex  flex-col content-center justify-center py-10">
       <div className="flex justify-end items-center gap-12 pr-10 mb-8 ml-8">
         <h1 className="text-6xl font-extrabold">Foodly</h1>
-        <SearchBar onSearch={function (searchResults: Recipe[]): void {
-          throw new Error("Function not implemented.");
-        } } />
-          <button
-          className="flex justify-between items-center px-4 py-5 h-6 w-40 bg-red-500 rounded-2xl text-white"
-          onClick={showBookmarked}
-        >
-          <Icon icon="basil:bookmark-solid" className="w-7 h-7" />
-          <span className="text-lg font-bold">Bookmarks</span>
-        </button>
-          <AddRecipe onAdd={function (): void {
-          throw new Error("Function not implemented.");
-        } }   />
-          <DeleteButton onRecipeDeleted={function (): void {
-          throw new Error("Function not implemented.");
-        } } />
+          <SearchBar onSearch={handleSearch} />
+            <button
+              className="flex justify-between items-center px-4 py-5 h-6 w-40 bg-red-500 rounded-2xl text-white"
+              onClick={showBookmarked}
+            >
+              <Icon icon="basil:bookmark-solid" className="w-7 h-7" />
+              <span className="text-lg font-bold">Bookmarks</span>
+          </button>
+          <AddRecipe onAdd={handleAddRecipe} />
+          <DeleteButton onRecipeDeleted={handleRecipeDeleted} />
           <UserAuth />
       </div>
 

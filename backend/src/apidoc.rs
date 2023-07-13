@@ -24,9 +24,10 @@ use utoipa::{
         tag_controller::single_tag,
         tag_controller::create_tag,
         tag_controller::toggle_tag,
-       /*  user_controller::login,
+        user_controller::login,
         user_controller::register,
-        user_controller::profile */
+        user_controller::profile,
+        user_controller::change_password
     ),
     components(
         schemas(RecipeResultDTO, RecipesInput, RecipePutDTO, PaginatedResult<RecipeResultDTO>),

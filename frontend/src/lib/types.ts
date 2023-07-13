@@ -1,4 +1,5 @@
 export interface Recipe {
+    bookmarked: any;
     id: number;
     title: string;
     servings: string;

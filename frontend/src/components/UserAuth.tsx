@@ -1,6 +1,8 @@
 import { Icon } from "@iconify/react";
 import React, { useState, useEffect } from 'react';
 
+export let jwtToken = "";
+
 const UserAuth: React.FC = () => {
     const [userName, setUserName] = useState("");
     const [userPassword, setUserPassword] = useState("");
@@ -34,6 +36,7 @@ const UserAuth: React.FC = () => {
         if (response && response.ok) {
             console.log('User logged in successfully');
             const { jwt_token } = await response.json();
+            jwtToken = jwt_token;
             localStorage.setItem('jwtToken', jwt_token);
             setIsLoggedIn(true);
             setShowForm(false);
@@ -53,8 +56,6 @@ const UserAuth: React.FC = () => {
     
         if (response && response.ok) {
             console.log('User registered successfully');
-            const { jwt_token } = await response.json();
-            localStorage.setItem('jwtToken', jwt_token);
             setIsLoggedIn(true);
             setShowForm(false);
         } else if (response) {
@@ -78,8 +79,9 @@ const UserAuth: React.FC = () => {
     }
 
     useEffect(() => {
-        const jwtToken = localStorage.getItem('jwtToken');
+        let jwtToken = localStorage.getItem('jwtToken');
         setIsLoggedIn(!!jwtToken);
+        jwtToken = jwtToken || "";
     }, []);
 
     // Render error message if it exists

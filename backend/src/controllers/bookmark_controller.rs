@@ -1,3 +1,4 @@
+use diesel::dsl::count;
 use diesel::prelude::*;
 use rocket::serde::json::Json;
 
@@ -15,12 +16,20 @@ use super::get_recipe_elements;
     path = "/bookmarks",
     tag = "recipes",
     responses(
-        (status = 200, description = "Bookmarked recipes found succesfully", body = [Vec<RecipeResultDTO>]),
+        (status = 200, description = "Bookmarked recipes found succesfully", body = [PaginatedResult<RecipeResultDTO>]),
         (status = 500, description = "Error loading recipes"),
+    ),
+    params(
+        ("page" = Option<i64>, Query, description = "Pagination: page number"),
+        ("per_page" = Option<i64>, Query, description = "Pagination: results per page"),
     )
 )]
-#[get("/bookmarks")]
-pub fn bookmarked_list(key: Result<Jwt, NetworkResponse>) -> RecipeResponse<Vec<RecipeResultDTO>> {
+#[get("/bookmarks?<page>&<per_page>")]
+pub fn bookmarked_list(
+    page: Option<i64>,
+    per_page: Option<i64>,
+    key: Result<Jwt, NetworkResponse>,
+) -> RecipeResponse<PaginatedResult<RecipeResultDTO>> {
     let user_id: Option<i32> = match key {
         Ok(k) => Some(k.claims.subject_id),
         Err(_) => None,
@@ -34,23 +43,63 @@ pub fn bookmarked_list(key: Result<Jwt, NetworkResponse>) -> RecipeResponse<Vec<
 
     let connection = &mut database::establish_connection();
 
-    let recipes_list = match recipes::table
+    let total: i64 = match recipes::table
         .inner_join(bookmarks::table)
         .filter(bookmarks::user_id.eq(user_id.unwrap()))
-        .select(Recipe::as_select())
-        .load::<Recipe>(connection)
+        .count()
+        .get_result(connection)
     {
-        Ok(res) => res,
+        Ok(c) => c,
         Err(_) => {
-            return RecipeResponse::InternalServerError(String::from(
-                "Cannot read recipes from the database.",
+            return RecipeResponse::Unauthorized(String::from(
+                "Database error while counting records.",
             ))
         }
     };
 
+    let page_number = page.unwrap_or(1);
+    let elements_per_page = per_page.unwrap_or(10);
+    let per_page = if elements_per_page < 1 {
+        10
+    } else {
+        elements_per_page
+    };
+    let max_page = (total - 1) / per_page + 1;
+    let current_page = if page_number < 1 {
+        1
+    } else if page_number > max_page {
+        max_page
+    } else {
+        page_number
+    };
+    let offset = elements_per_page * (current_page - 1);
+
+    let recipes_list = match recipes::table
+        .inner_join(bookmarks::table)
+        .filter(bookmarks::user_id.eq(user_id.unwrap()))
+        .select(Recipe::as_select())
+        .order(recipes::updated_at.desc())
+        .offset(offset)
+        .limit(elements_per_page)
+        .load::<Recipe>(connection)
+    {
+        Ok(res) => res,
+        Err(err) => return RecipeResponse::InternalServerError(err.to_string()),
+    };
+
     match get_recipe_elements(recipes_list, connection, user_id) {
-        Ok(res) => RecipeResponse::Ok(Json(res)),
-        Err(err) => RecipeResponse::InternalServerError(err),
+        Ok(res) => {
+            let paginated = PaginatedResult {
+                records: res,
+                total,
+                current_page,
+                per_page,
+            };
+            RecipeResponse::Ok(Json(paginated))
+        }
+        Err(_) => RecipeResponse::InternalServerError(String::from(
+            "Cannot read recipes from the database.",
+        )),
     }
 }
 

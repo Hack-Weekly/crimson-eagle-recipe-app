@@ -322,3 +322,15 @@ impl From<Tag> for TagDTO {
         }
     }
 }
+
+#[derive(Serialize, ToSchema)]
+#[serde(crate = "rocket::serde")]
+pub struct PaginatedResult<T> {
+    pub records: Vec<T>,
+    #[schema(example = 102)]
+    pub total: i64,
+    #[schema(example = 1)]
+    pub current_page: i64,
+    #[schema(example = 12)]
+    pub per_page: i64,
+}

@@ -8,6 +8,20 @@ use crate::models::*;
 use crate::schema::users::dsl::*;
 use crate::jwt::*;
 
+/// Register a new user
+///
+/// Create a new user in the database.
+#[utoipa::path(
+    post,
+    path = "/register",
+    request_body = NewUser,
+    tag = "users",
+    responses(
+        (status = 200, description = "User registered succesfully", body = User),
+        (status = 400, description = "Invalid user input"),
+        (status = 500, description = "Internal Server Error"),
+    )
+)]
 #[post("/register", data = "<new_user>")]
 pub fn register(new_user: Json<NewUser>) -> Result<Json<User>, NetworkResponse> {
     new_user.validate().map_err(|_err| NetworkResponse::BadRequest("Invalid user input".to_string()))?;
@@ -32,6 +46,22 @@ pub fn register(new_user: Json<NewUser>) -> Result<Json<User>, NetworkResponse> 
     }
 }
 
+/// User login
+///
+/// Authenticate a user and return a JWT token.
+#[utoipa::path(
+    post,
+    path = "/login",
+    request_body = LoginUser,
+    tag = "users",
+    responses(
+        (status = 200, description = "User logged in succesfully", body = String),
+        (status = 400, description = "Invalid user input"),
+        (status = 401, description = "Failed to authorize access"),
+        (status = 404, description = "User not found"),
+        (status = 500, description = "Internal Server Error"),
+    )
+)]
 #[post("/login", data = "<user>")]
 pub fn login(user: Json<LoginUser>) -> Result<String, NetworkResponse> {
     let token = login_user(user)?;
@@ -78,6 +108,21 @@ pub fn login_user(login_user: Json<LoginUser>) -> Result<String, NetworkResponse
     }
 }
 
+/// Fetch User Profile
+///
+/// Returns the user profile information.
+#[utoipa::path(
+    get,
+    path = "/profile",
+    tag = "users",
+    responses(
+        (status = 200, description = "User profile found succesfully", body = UserProfile),
+        (status = 404, description = "User profile not found"),
+    ),
+    security(
+        ("name" = ["Bearer"])
+    ),
+)]
 #[get("/profile")]
 pub fn profile(key: Result<Jwt, NetworkResponse>) -> Result<Json<UserProfile>, NetworkResponse> {
     let key = key?;
@@ -104,6 +149,24 @@ fn fetch_user_profile(user_id: i32) -> Result<UserProfile, NetworkResponse> {
     })
 }
 
+/// Change User Password
+///
+/// Updates the password of the current user.
+#[utoipa::path(
+    put,
+    path = "/profile/change_password",
+    request_body = ChangePasswordRequest,
+    tag = "users",
+    responses(
+        (status = 200, description = "Password successfully changed"),
+        (status = 400, description = "Incorrect current password"),
+        (status = 404, description = "User not found"),
+        (status = 500, description = "Internal Server Error"),
+    ),
+    security(
+        ("name" = ["Bearer"])
+    ),
+)]
 #[put("/profile/change_password", data = "<change_password_request>")]
 pub fn change_password(key: Result<Jwt, NetworkResponse>, change_password_request: Json<ChangePasswordRequest>) -> Result<NetworkResponse, NetworkResponse> {
     let user_id = key?.claims.subject_id;

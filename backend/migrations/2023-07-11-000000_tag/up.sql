@@ -1,0 +1,5 @@
+CREATE TABLE tags (
+    id SERIAL PRIMARY KEY,
+    label VARCHAR NOT NULL,
+    slug VARCHAR NOT NULL
+);

@@ -9,7 +9,10 @@ use rocket::{Build, Rocket};
 use rocket_cors::{AllowedHeaders, AllowedOrigins, CorsOptions};
 
 mod controllers;
-use controllers::{recipe_controller, recipe_update_controller, user_controller};
+use controllers::{
+    bookmark_controller, recipe_controller, recipe_update_controller, tag_controller,
+    user_controller,
+};
 
 mod apidoc;
 mod database;
@@ -49,12 +52,18 @@ fn rocket() -> Rocket<Build> {
         .mount(
             "/",
             routes![
+                bookmark_controller::bookmarked_list,
+                bookmark_controller::toggle_bookmark,
                 recipe_controller::recipe,
                 recipe_controller::search,
                 recipe_controller::single_recipe,
                 recipe_controller::addrecipes,
                 recipe_update_controller::update_recipe,
                 recipe_controller::delete,
+                tag_controller::tag_list,
+                tag_controller::single_tag,
+                tag_controller::create_tag,
+                tag_controller::toggle_tag,
                 user_controller::login,
                 user_controller::register,
                 user_controller::profile,

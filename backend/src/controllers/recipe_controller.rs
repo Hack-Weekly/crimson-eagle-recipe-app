@@ -7,6 +7,8 @@ use crate::models::*;
 use crate::schema::recipes::dsl::*;
 use crate::schema::*;
 
+use super::get_recipe_elements;
+
 /// List of recipes
 ///
 /// Get all recipes from the database
@@ -15,17 +17,32 @@ use crate::schema::*;
     path = "/recipes",
     tag = "recipes",
     responses(
-        (status = 200, description = "Recipes found succesfully", body = [RecipeResultDTO]),
+        (status = 200, description = "Recipes found succesfully", body = [Vec<RecipeResultDTO>]),
         (status = 500, description = "Error loading recipes"),
     )
 )]
 #[get("/recipes")]
-pub fn recipe() -> Json<Vec<Recipe>> {
+pub fn recipe(key: Result<Jwt, NetworkResponse>) -> RecipeResponse<Vec<RecipeResultDTO>> {
     let connection = &mut database::establish_connection();
-    recipes
-        .load::<Recipe>(connection)
-        .map(Json)
-        .expect("Error loading recipes")
+
+    let recipes_list = match recipes.load::<Recipe>(connection) {
+        Ok(res) => res,
+        Err(_) => {
+            return RecipeResponse::InternalServerError(String::from(
+                "Cannot read recipes from the database.",
+            ))
+        }
+    };
+
+    let user_id: Option<i32> = match key {
+        Ok(k) => Some(k.claims.subject_id),
+        Err(_) => None,
+    };
+
+    match get_recipe_elements(recipes_list, connection, user_id) {
+        Ok(res) => RecipeResponse::Ok(Json(res)),
+        Err(err) => RecipeResponse::InternalServerError(err),
+    }
 }
 
 /// List of recipes, filtered

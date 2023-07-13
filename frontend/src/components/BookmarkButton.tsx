@@ -8,15 +8,12 @@ interface BookmarkButtonProps {
   onBookmark: (recipe: Recipe) => void;
 }
 
-const BookmarkButton: React.FC<BookmarkButtonProps> = ({
-  recipe,
-  onBookmark,
-}) => {
+const BookmarkButton: React.FC<BookmarkButtonProps> = ({ recipe, onBookmark }) => {
   const handleClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     try {
-      const response = await fetch(`https://crimson-eagles-recipe-app.onrender.com/recipes/recipes/bookmark/${recipe.id}`, {
-        method: "POST",
+      const response = await fetch(`https://crimson-eagles-recipe-app.onrender.com/bookmarks/${recipe.id}`, {
+        method: "PUT",
         headers: {
           Authorization: `Bearer ${jwtToken}`,
         },

@@ -34,7 +34,7 @@ export default function Home() {
 
       const fetchBookmarkedRecipes = async () => {
         try {
-          const response = await fetch("https://crimson-eagles-recipe-app.onrender.com/recipes/recipes/bookmark", {
+          const response = await fetch("https://crimson-eagles-recipe-app.onrender.com/bookmarks", {
             headers: {
               Authorization: `Bearer ${jwtToken}`,
             },

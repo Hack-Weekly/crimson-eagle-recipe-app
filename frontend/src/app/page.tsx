@@ -7,6 +7,7 @@ import AddRecipe from "@/components/AddRecipe";
 import UserAuth from "@/components/UserAuth";
 import { Recipe } from "@/lib/types";
 import BookmarkButton from "@/components/BookmarkButton";
+import InfoTabs from "@/components/InfoTabs";
 import { getJwtToken } from "@/components/UserAuth";
 
 interface Tag {
@@ -20,6 +21,7 @@ export default function Home() {
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [showBookmarkedRecipes, setShowBookmarkedRecipes] = useState(false);
   const [filterTags, setFilterTags] = useState<Tag[]>([]);
+  const [bookmarkedRecipes, setBookmarkedRecipes] = useState<Recipe[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -56,15 +58,6 @@ export default function Home() {
 
     fetchData();
   }, []);
-
-  const fetchBookmarkedRecipes = async () => {
-    try {
-      const bookmarkedRecipes = recipes.filter((recipe) => recipe.bookmarked);
-      setRecipes(bookmarkedRecipes);
-    } catch (error) {
-      console.error("Failed to fetch bookmarked recipes:", error);
-    }
-  };
   
   const handleSearch = (searchResults: Recipe[]) => {
     setRecipes(searchResults);
@@ -88,13 +81,19 @@ export default function Home() {
     setRecipes(updatedRecipes);
   };
 
+  useEffect(() => {
+    const bookmarkedRecipes = recipes.filter((recipe) => recipe.bookmarked);
+    setBookmarkedRecipes(bookmarkedRecipes);
+  }, [recipes]);
+
   const showBookmarked = () => {
     setShowBookmarkedRecipes(true);
-    fetchBookmarkedRecipes();
+    localStorage.setItem("showBookmarkedRecipes", "true");
   };
 
   const hideBookmarked = () => {
     setShowBookmarkedRecipes(false);
+    localStorage.removeItem("showBookmarkedRecipes");
   };
 
   const handleFilterChange = (tag: Tag) => {
@@ -178,26 +177,6 @@ export default function Home() {
       </div>
     </div>
 
-      {selectedRecipe && (
-        <div className="fixed top-0 left-0 right-0 bottom-0 bg-gray-800 bg-opacity-40 flex justify-center items-center">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-2/4 h-2/4 flex flex-col items-center justify-center">
-            <h2 className="text-2xl font-bold mb-4">{selectedRecipe.title}</h2>
-            <p className="text-lg mb-2">Servings: {selectedRecipe.servings}</p>
-            <p className="text-sm mb-2">
-              Created At: {selectedRecipe.created_at || "N/A"}
-            </p>
-            <p className="text-sm">
-              Updated At: {selectedRecipe.updated_at || "N/A"}
-            </p>
-            <button
-              className="bg-red-500 text-white px-4 py-2 rounded-md mt-4"
-              onClick={() => setSelectedRecipe(null)}
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
       {showBookmarkedRecipes && (
         <div className="fixed top-0 left-0 right-0 bottom-0 bg-gray-800 bg-opacity-40 flex justify-center items-center">
           <div className="bg-white rounded-lg h-3/4 max-h-3/4 w-3/4 shadow-lg p-6 overflow-y-scroll">
@@ -208,9 +187,7 @@ export default function Home() {
             </button>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 overflow-y-auto">
-              {recipes
-                .filter((recipe) => recipe.bookmarked)
-                .map((recipe) => (
+              {bookmarkedRecipes.map((recipe) => (
                   <div
                     key={recipe.id}
                     className="bg-white rounded-lg shadow-lg p-4 sm:p-6 border border-black mb-8"
@@ -246,6 +223,28 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {selectedRecipe && (
+              <div className="fixed top-0 left-0 right-0 bottom-0 bg-gray-800 bg-opacity-40 flex justify-center items-center">
+                <div className="bg-white rounded-lg shadow-lg p-6 w-2/4 h-2/4 flex flex-col items-center justify-center overflow-y-scroll">
+                  <h2 className="text-2xl font-bold mb-4">{selectedRecipe.title}</h2>
+                  <p className="text-lg mb-2">Servings: {selectedRecipe.servings}</p>
+                  <p className="text-sm mb-2">
+                    Created At: {selectedRecipe.created_at || "N/A"}
+                  </p>
+                  <p className="text-sm">
+                    Updated At: {selectedRecipe.updated_at || "N/A"}
+                  </p>
+                  <InfoTabs ingredients={[selectedRecipe.ingredients]} instructions={[selectedRecipe.instructions]} />
+                  <button
+                    className="bg-red-500 text-white px-4 py-2 rounded-md mt-4"
+                    onClick={() => setSelectedRecipe(null)}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
     </main>
   );
 }

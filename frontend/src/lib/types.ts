@@ -20,7 +20,3 @@ export interface Recipe {
   created_at: string | null;
   updated_at: string | null;
 }
-
-export type SearchBarProps = {
-  onSearch: (searchResults: Recipe[]) => void;
-};

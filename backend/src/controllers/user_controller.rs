@@ -63,12 +63,9 @@ pub fn register(new_user: Json<NewUser>) -> Result<Json<User>, NetworkResponse> 
     )
 )]
 #[post("/login", data = "<user>")]
-pub fn login(user: Json<LoginUser>) -> Result<String, NetworkResponse> {
+pub fn login(user: Json<LoginUser>) -> Result<Json<ResponseBody>, NetworkResponse> {
     let token = login_user(user)?;
-
-    let response = Response { body: ResponseBody::AuthToken(token) };
-
-    Ok(serde_json::to_string(&response).unwrap())
+    Ok(Json(ResponseBody::AuthToken(token)))
 }
 
 pub fn login_user(login_user: Json<LoginUser>) -> Result<String, NetworkResponse> {

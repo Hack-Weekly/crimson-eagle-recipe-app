@@ -5,6 +5,9 @@ use rocket::serde::{Deserialize, Serialize};
 use rocket::request::{Outcome, Request, FromRequest};
 use rocket::http::Status;
 use validator::Validate;
+use validator::ValidationError;
+use lazy_static::lazy_static;
+use regex::Regex;
 use jsonwebtoken::errors::Error;
 use crate::jwt::decode_jwt;
 
@@ -16,22 +19,39 @@ pub struct User {
     pub password: String,
 }
 
+lazy_static! {
+    // Username must be at least 3 characters long and can only contain alphanumeric characters
+    static ref USERNAME_REGEX: Regex = Regex::new(r"^[a-zA-Z0-9]{3,}$").unwrap();
+}
+// Password must be at least 6 characters long and contain at least one letter and one number. Can also contain special characters
+fn validate_password(password: &str) -> Result<(), ValidationError> {
+    let has_letter = password.chars().any(|c| c.is_alphabetic());
+    let has_number = password.chars().any(|c| c.is_numeric());
+    let has_special_char = password.chars().any(|c| "!@#$%^&*".contains(c));
+
+    if has_letter && has_number && (has_special_char || password.chars().all(|c| c.is_alphanumeric())) {
+        Ok(())
+    } else {
+        Err(ValidationError::new("Password requirements not met"))
+    }
+}
+
 #[derive(FromForm, Insertable, Deserialize, Validate)]
 #[serde(crate = "rocket::serde")]
 #[diesel(table_name = users)]
 pub struct NewUser<'a> {
-    #[validate(length(min = 3, message = "Username must be at least 3 characters long"))]
+    #[validate(regex(path = "USERNAME_REGEX"))]
     pub username: &'a str,
-    #[validate(length(min = 8, message = "Password must be at least 8 characters long"))]
+    #[validate(length(min=6), custom(function = "validate_password"))]
     pub password: &'a str,
 }
 
 #[derive(FromForm, Deserialize, Validate)]
 #[serde(crate = "rocket::serde")]
 pub struct LoginUser {
-    #[validate(length(min = 1, message = "Username is required"))]
+    #[validate(length(min = 3))]
     pub username: String,
-    #[validate(length(min = 1, message = "Password is required"))]
+    #[validate(length(min = 6))]
     pub password: String,
 }
 

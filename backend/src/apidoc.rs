@@ -12,18 +12,25 @@ use utoipa::{
         title = "Crimson Eagle's Recipe App"
     ),
     paths(
+        bookmark_controller::bookmarked_list,
+        bookmark_controller::toggle_bookmark,
         recipe_controller::recipe,
         recipe_controller::search,
         recipe_controller::single_recipe,
         recipe_controller::addrecipes,
         recipe_update_controller::update_recipe,
         recipe_controller::delete,
-       /*  user_controller::login,
+        tag_controller::tag_list,
+        tag_controller::single_tag,
+        tag_controller::create_tag,
+        tag_controller::toggle_tag,
+        user_controller::login,
         user_controller::register,
-        user_controller::profile */
+        user_controller::profile,
+        user_controller::change_password
     ),
     components(
-        schemas(RecipeResultDTO, RecipesInput, RecipePutDTO),
+        schemas(RecipeResultDTO, RecipesInput, RecipePutDTO, PaginatedResult<RecipeResultDTO>),
     ),
     tags(
         (name = "recipes", description = "Recipes endpoints."),

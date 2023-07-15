@@ -7,6 +7,7 @@ use std::env;
 use rocket::http::Method;
 use rocket::{Build, Rocket};
 use rocket_cors::{AllowedHeaders, AllowedOrigins, CorsOptions};
+use rocket_sync_db_pools::{database, diesel};
 
 mod controllers;
 use controllers::{
@@ -22,6 +23,9 @@ mod schema;
 
 #[cfg(test)]
 mod tests;
+
+#[database("postgres_logs")]
+pub struct LogsDbConn(diesel::PgConnection);
 
 #[launch]
 fn rocket() -> Rocket<Build> {
@@ -55,6 +59,7 @@ fn rocket() -> Rocket<Build> {
     .expect("CORS failed.");
 
     rocket::build()
+        .attach(LogsDbConn::fairing())
         .mount(
             "/",
             routes![

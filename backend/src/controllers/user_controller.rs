@@ -3,10 +3,11 @@ use rocket::serde::json::Json;
 use validator::Validate;
 use bcrypt::{hash, verify, DEFAULT_COST};
 
-use crate::database;
+use crate::LogsDbConn;
 use crate::models::*;
 use crate::schema::users::dsl::*;
 use crate::jwt::*;
+
 
 /// Register a new user
 ///
@@ -23,24 +24,26 @@ use crate::jwt::*;
     )
 )]
 #[post("/register", data = "<new_user>")]
-pub fn register(new_user: Json<NewUser>) -> Result<Json<User>, NetworkResponse> {
+pub async fn register(conn: LogsDbConn, new_user: Json<NewUser>) -> Result<Json<User>, NetworkResponse> {
     new_user.validate().map_err(|_err| NetworkResponse::BadRequest("Invalid user input".to_string()))?;
 
-    let connection = &mut database::establish_connection();
-    let hashed_password = match hash(new_user.password, DEFAULT_COST) {
+    let hashed_password = match hash(&new_user.password, DEFAULT_COST) {
         Ok(hash) => hash,
         Err(err) => return Err(NetworkResponse::InternalServerError(format!("Failed to hash password: {}", err))),
     };
 
     let new_user = NewUser {
-        username: new_user.username,
-        password: &hashed_password,
+        username: new_user.username.clone(),
+        password: hashed_password.clone(),
     };
 
-    match diesel::insert_into(users)
-        .values(new_user)
-        .get_result::<User>(connection)
-    {
+    let result = conn.run(move |c| {
+        diesel::insert_into(users)
+            .values(&new_user)
+            .get_result::<User>(c)
+    }).await;
+
+    match result {
         Ok(user) => Ok(Json(user)),
         Err(err) => Err(NetworkResponse::InternalServerError(format!("Failed to insert new user: {}", err))),
     }
@@ -63,18 +66,19 @@ pub fn register(new_user: Json<NewUser>) -> Result<Json<User>, NetworkResponse> 
     )
 )]
 #[post("/login", data = "<user>")]
-pub fn login(user: Json<LoginUser>) -> Result<Json<ResponseBody>, NetworkResponse> {
-    let token = login_user(user)?;
+pub async fn login(conn: LogsDbConn, user: Json<LoginUser>) -> Result<Json<ResponseBody>, NetworkResponse> {
+    let token = login_user(conn, user).await?;
     Ok(Json(ResponseBody::AuthToken(token)))
 }
 
-pub fn login_user(login_user: Json<LoginUser>) -> Result<String, NetworkResponse> {
+pub async fn login_user(conn: LogsDbConn, login_user: Json<LoginUser>) -> Result<String, NetworkResponse> {
     login_user.validate().map_err(|_err| NetworkResponse::BadRequest("Invalid user input".to_string()))?;
-
-    let connection = &mut database::establish_connection();
-    let result = users
-        .filter(username.eq(&login_user.username))
-        .first::<User>(connection);
+    let login_user_clone = login_user.clone();
+    let result = conn.run(move |c| {
+        users
+            .filter(username.eq(&login_user_clone.username))
+            .first::<User>(c)
+    }).await;
 
     match result {
         Ok(user) => {
@@ -121,29 +125,31 @@ pub fn login_user(login_user: Json<LoginUser>) -> Result<String, NetworkResponse
     ),
 )]
 #[get("/profile")]
-pub fn profile(key: Result<Jwt, NetworkResponse>) -> Result<Json<UserProfile>, NetworkResponse> {
+pub async fn profile(conn: LogsDbConn, key: Result<Jwt, NetworkResponse>) -> Result<Json<UserProfile>, NetworkResponse> {
     let key = key?;
     let user_id = key.claims.subject_id;
     
-    match fetch_user_profile(user_id) {
+    match fetch_user_profile(conn, user_id).await {
         Ok(user_profile) => Ok(Json(user_profile)),
         Err(_) => Err(NetworkResponse::NotFound("User profile not found".to_string())),
     }
 }
 
-fn fetch_user_profile(user_id: i32) -> Result<UserProfile, NetworkResponse> {
+async fn fetch_user_profile(conn: LogsDbConn, user_id: i32) -> Result<UserProfile, NetworkResponse> {
     use crate::schema::users::dsl::*;
 
-    let connection = &mut database::establish_connection();
+    let user = conn.run(move |c| {
+        users
+            .filter(id.eq(user_id))
+            .first::<User>(c)
+    }).await;
 
-    let user = users
-        .filter(id.eq(user_id))
-        .first::<User>(connection)
-        .map_err(|_| NetworkResponse::NotFound("User not found".to_string()))?;
-
-    Ok(UserProfile {
-        username: user.username,
-    })
+    match user {
+        Ok(user) => Ok(UserProfile {
+            username: user.username,
+        }),
+        Err(err) => Err(NetworkResponse::NotFound(format!("Failed to find user: {}", err))),
+    }
 }
 
 /// Change User Password
@@ -165,14 +171,17 @@ fn fetch_user_profile(user_id: i32) -> Result<UserProfile, NetworkResponse> {
     ),
 )]
 #[put("/profile/change_password", data = "<change_password_request>")]
-pub fn change_password(key: Result<Jwt, NetworkResponse>, change_password_request: Json<ChangePasswordRequest>) -> Result<NetworkResponse, NetworkResponse> {
+pub async fn change_password(conn: LogsDbConn, key: Result<Jwt, NetworkResponse>, change_password_request: Json<ChangePasswordRequest>) -> Result<NetworkResponse, NetworkResponse> {
     let user_id = key?.claims.subject_id;
 
-    let connection = &mut database::establish_connection();
-    let user = users
-        .filter(id.eq(user_id))
-        .first::<User>(connection)
-        .map_err(|err| NetworkResponse::NotFound(format!("Failed to find user: {}", err)))?;
+    let user = match conn.run(move |c| {
+        users
+            .filter(id.eq(user_id))
+            .first::<User>(c)
+    }).await {
+        Ok(user) => user,
+        Err(err) => return Err(NetworkResponse::NotFound(format!("Failed to find user: {}", err)))
+    };
 
     match verify(&change_password_request.old_password, &user.password) {
         Ok(valid) => {
@@ -181,11 +190,14 @@ pub fn change_password(key: Result<Jwt, NetworkResponse>, change_password_reques
                     Ok(hash) => hash,
                     Err(err) => return Err(NetworkResponse::InternalServerError(format!("Failed to hash password: {}", err))),
                 };
-                diesel::update(users.filter(id.eq(user_id)))
-                    .set(password.eq(new_password))
-                    .execute(connection)
-                    .map_err(|err| NetworkResponse::InternalServerError(format!("Failed to update password: {}", err)))?;
-                Ok(NetworkResponse::Ok("Password successfully changed".to_string()))
+                match conn.run(move |c| {
+                    diesel::update(users.filter(id.eq(user_id)))
+                        .set(password.eq(new_password))
+                        .execute(c)
+                }).await {
+                    Ok(_) => Ok(NetworkResponse::Ok("Password successfully changed".to_string())),
+                    Err(err) => Err(NetworkResponse::InternalServerError(format!("Failed to update password: {}", err))),
+                }
             } else {
                 Err(NetworkResponse::BadRequest("Incorrect current password".to_string()))
             }

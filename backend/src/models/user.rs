@@ -39,14 +39,14 @@ fn validate_password(password: &str) -> Result<(), ValidationError> {
 #[derive(FromForm, Insertable, Deserialize, Validate)]
 #[serde(crate = "rocket::serde")]
 #[diesel(table_name = users)]
-pub struct NewUser<'a> {
+pub struct NewUser {
     #[validate(regex(path = "USERNAME_REGEX"))]
-    pub username: &'a str,
+    pub username: String,
     #[validate(length(min=6), custom(function = "validate_password"))]
-    pub password: &'a str,
+    pub password: String,
 }
 
-#[derive(FromForm, Deserialize, Validate)]
+#[derive(FromForm, Deserialize, Validate, Clone)]
 #[serde(crate = "rocket::serde")]
 pub struct LoginUser {
     #[validate(length(min = 3))]

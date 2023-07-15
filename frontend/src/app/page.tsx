@@ -5,7 +5,7 @@ import React, { useState, useEffect} from "react";
 import DeleteButton from "@/components/DeleteRecipe";
 import AddRecipe from "@/components/AddRecipe";
 import UserAuth from "@/components/UserAuth";
-import { Recipe } from "@/lib/types";
+import { Pagination, Recipe } from "@/lib/types";
 import BookmarkButton from "@/components/BookmarkButton";
 import InfoTabs from "@/components/InfoTabs";
 import { getJwtToken } from "@/components/UserAuth";
@@ -27,8 +27,8 @@ export default function Home() {
     const fetchData = async () => {
       try {
         const response = await fetch("https://crimson-eagles-recipe-app.onrender.com/recipes");
-        const data = await response.json();
-        const recipesWithBookmarkedFlag = data.map((recipe: Recipe) => ({
+        const data: Pagination<Recipe> = await response.json();
+        const recipesWithBookmarkedFlag: Recipe[] = data.records.map((recipe: Recipe) => ({
           ...recipe,
           bookmarked: false,
         }));
@@ -82,6 +82,7 @@ export default function Home() {
   };
 
   useEffect(() => {
+    console.log(recipes)
     const bookmarkedRecipes = recipes.filter((recipe) => recipe.bookmarked);
     setBookmarkedRecipes(bookmarkedRecipes);
   }, [recipes]);
@@ -235,7 +236,7 @@ export default function Home() {
                   <p className="text-sm">
                     Updated At: {selectedRecipe.updated_at || "N/A"}
                   </p>
-                  <InfoTabs ingredients={[selectedRecipe.ingredients]} instructions={[selectedRecipe.instructions]} />
+                  <InfoTabs ingredients={selectedRecipe.ingredients} instructions={selectedRecipe.instructions} />
                   <button
                     className="bg-red-500 text-white px-4 py-2 rounded-md mt-4"
                     onClick={() => setSelectedRecipe(null)}

@@ -1,6 +1,6 @@
 import { Icon } from "@iconify/react";
 import React, { useEffect, useState } from "react";
-import { SearchBarProps } from "@/lib/types";
+import { Pagination, Recipe, SearchBarProps } from "@/lib/types";
 
 const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
   const [query, setQuery] = useState("");
@@ -14,8 +14,8 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
 
       try {
         const response = await fetch(endpoint);
-        const data = await response.json();
-        onSearch(data); // Call the callback function with the search results
+        const data: Pagination<Recipe> = await response.json();
+        onSearch(data.records); // Call the callback function with the search results
       } catch (error) {
         console.error("An error occurred:", error);
       }

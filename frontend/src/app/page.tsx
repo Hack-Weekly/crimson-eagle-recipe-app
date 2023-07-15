@@ -20,7 +20,7 @@ export default function Home() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [showBookmarkedRecipes, setShowBookmarkedRecipes] = useState(false);
-  const [filterTags, setFilterTags] = useState([]);
+  const [filterTags, setFilterTags] = useState<Tag[]>([]);
   const [bookmarkedRecipes, setBookmarkedRecipes] = useState<Recipe[]>([]);
 
   useEffect(() => {

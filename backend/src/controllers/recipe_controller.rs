@@ -5,27 +5,51 @@ use rocket::serde::json::Json;
 use crate::database;
 use crate::models::*;
 use crate::schema::recipes::dsl::*;
-use crate::schema::*;
 
 use super::get_recipe_elements;
+use super::pagination;
 
 /// List of recipes
 ///
 /// Get all recipes from the database
 #[utoipa::path(
     get,
-    path = "/recipes",
+    path = "/recipes?{page}&{per_page}",
     tag = "recipes",
     responses(
-        (status = 200, description = "Recipes found succesfully", body = [Vec<RecipeResultDTO>]),
+        (status = 200, description = "Recipes found succesfully", body = [PaginatedResult<RecipeResultDTO>]),
         (status = 500, description = "Error loading recipes"),
-    )
+    ),
+    params(
+        ("page" = Option<i64>, Query, description = "Pagination: page number"),
+        ("per_page" = Option<i64>, Query, description = "Pagination: results per page"),
+    ),
 )]
-#[get("/recipes")]
-pub fn recipe(key: Result<Jwt, NetworkResponse>) -> RecipeResponse<Vec<RecipeResultDTO>> {
+#[get("/recipes?<page>&<per_page>")]
+pub fn recipe(
+    page: Option<i64>,
+    per_page: Option<i64>,
+    key: Result<Jwt, NetworkResponse>,
+) -> RecipeResponse<PaginatedResult<RecipeResultDTO>> {
     let connection = &mut database::establish_connection();
 
-    let recipes_list = match recipes.load::<Recipe>(connection) {
+    let total: i64 = match recipes.count().get_result(connection) {
+        Ok(c) => c,
+        Err(_) => {
+            return RecipeResponse::InternalServerError(String::from(
+                "Database error while counting records.",
+            ))
+        }
+    };
+
+    let (current_page, per_page, offset) = pagination(page, per_page, total);
+
+    let recipes_list = match recipes
+        .order(updated_at.desc())
+        .offset(offset)
+        .limit(per_page)
+        .load::<Recipe>(connection)
+    {
         Ok(res) => res,
         Err(_) => {
             return RecipeResponse::InternalServerError(String::from(
@@ -40,8 +64,18 @@ pub fn recipe(key: Result<Jwt, NetworkResponse>) -> RecipeResponse<Vec<RecipeRes
     };
 
     match get_recipe_elements(recipes_list, connection, user_id) {
-        Ok(res) => RecipeResponse::Ok(Json(res)),
-        Err(err) => RecipeResponse::InternalServerError(err),
+        Ok(res) => {
+            let paginated = PaginatedResult {
+                records: res,
+                total,
+                current_page,
+                per_page,
+            };
+            RecipeResponse::Ok(Json(paginated))
+        }
+        Err(_) => RecipeResponse::InternalServerError(String::from(
+            "Cannot read recipes from the database.",
+        )),
     }
 }
 
@@ -104,67 +138,34 @@ pub fn search(
     )
 )]
 #[get("/recipes/<recipe_id>")]
-pub fn single_recipe(recipe_id: i32) -> Result<Json<RecipeResultDTO>, Status> {
+pub fn single_recipe(
+    recipe_id: i32,
+    key: Result<Jwt, NetworkResponse>,
+) -> RecipeResponse<RecipeResultDTO> {
     let connection = &mut database::establish_connection();
 
-    let inst = match instructions::table
-        .filter(instructions::recipe_id.eq(recipe_id))
-        .order(instructions::display_order.asc())
-        .load::<Instruction>(connection)
-    {
+    let recipes_list = match recipes.find(recipe_id).load::<Recipe>(connection) {
         Ok(res) => res,
-        Err(_) => return Err(Status::InternalServerError),
-    };
-
-    match recipes.find(recipe_id).first::<Recipe>(connection) {
-        Ok(res) => {
-            let mut recipe_with_inst = RecipeResultDTO::from(res);
-            recipe_with_inst.instructions = inst
-                .iter()
-                .map(|i| i.instruction.clone())
-                .collect::<Vec<String>>();
-            Ok(Json(recipe_with_inst))
+        Err(_) => {
+            return RecipeResponse::InternalServerError(String::from(
+                "Cannot read recipes from the database.",
+            ))
         }
-        Err(_) => Err(Status::NotFound),
-    }
-}
-
-/// Add recipe
-///
-/// Create new recipe in the database
-#[utoipa::path(
-    post,
-    path = "/recipes",
-    request_body = RecipesInput,
-    tag = "recipes",
-    responses(
-        (status = 201, description = "Recipe created succesfully", body = RecipeResultDTO),
-        (status = 400, description = "Validation error"),
-        (status = 500, description = "Internal Server Error"),
-    ),
-    security(
-        ("name" = ["Bearer"])
-    ),
-)]
-#[post("/recipes", data = "<addrecipes>")]
-pub fn addrecipes(addrecipes: Json<RecipesInput>) -> Result<Json<Recipe>, Status> {
-    use crate::schema::recipes;
-
-    let connection = &mut database::establish_connection();
-    match diesel::insert_into(recipes::table)
-        .values(addrecipes.into_inner())
-        .execute(connection)
-    {
-        Ok(_) => (),
-        Err(_) => return Err(Status::InternalServerError),
     };
 
-    match recipes::table
-        .order(recipes::id.desc())
-        .first::<Recipe>(connection)
-    {
-        Ok(recipe) => Ok(Json(recipe)),
-        Err(_) => Err(Status::InternalServerError),
+    let user_id: Option<i32> = match key {
+        Ok(k) => Some(k.claims.subject_id),
+        Err(_) => None,
+    };
+
+    match get_recipe_elements(recipes_list, connection, user_id) {
+        Ok(res) => match res.first() {
+            Some(r) => RecipeResponse::Ok(Json(r.clone())),
+            None => RecipeResponse::NotFound(String::from("The recipe was not found.")),
+        },
+        Err(_) => RecipeResponse::InternalServerError(String::from(
+            "Cannot read recipes from the database.",
+        )),
     }
 }
 

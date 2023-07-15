@@ -85,6 +85,12 @@ pub fn update_recipe(
             Err(_) => return Err(Status::InternalServerError),
         };
 
+    // get updated tags
+    let recipe_tags = match update_tags(recipe_id, &updaterecipe.tags, connection) {
+        Ok(res) => res,
+        Err(_) => return Err(Status::InternalServerError),
+    };
+
     let mut recipe = RecipeResultDTO::from(recipe);
     recipe.instructions = recipe_instructions
         .into_iter()
@@ -94,6 +100,10 @@ pub fn update_recipe(
         .into_iter()
         .map(IngredientDTO::from)
         .collect::<Vec<IngredientDTO>>();
+    recipe.tags = recipe_tags
+        .into_iter()
+        .map(TagDTO::from)
+        .collect::<Vec<TagDTO>>();
 
     Ok(Json(recipe))
 }
@@ -410,6 +420,152 @@ fn update_ingredients(
         .filter(recipe_ingredients::recipe_id.eq(recipe_id))
         .inner_join(ingredients::table)
         .load::<(RecipeIngredient, Ingredient)>(connection)
+    {
+        Ok(res) => Ok(res),
+        Err(_) => Err(Status::InternalServerError),
+    }
+}
+
+fn update_tags(
+    recipe_id: i32,
+    update: &Option<Vec<String>>,
+    connection: &mut PgConnection,
+) -> Result<Vec<Tag>, Status> {
+    let mut recipe_tags = match recipes_tags::table
+        .filter(recipes_tags::recipe_id.eq(recipe_id))
+        .inner_join(tags::table)
+        .select(Tag::as_select())
+        .load::<Tag>(connection)
+    {
+        Ok(res) => res,
+        Err(_) => return Err(Status::InternalServerError),
+    };
+
+    if update.is_none() {
+        return Ok(recipe_tags);
+    }
+
+    // add tags
+    let available_tags = match tags::table.load::<Tag>(connection) {
+        Ok(res) => res,
+        Err(_) => return Err(Status::InternalServerError),
+    };
+
+    let mut update_tags: Vec<String> = update.clone().unwrap();
+
+    let mut recipes_tags_inserts = Vec::<RecipeTag>::new();
+    let mut tag_inserts = Vec::<TagDTO>::new();
+    let mut delayed_inserts = Vec::<String>::new();
+    let mut delete_ids = Vec::<i32>::new();
+
+    for _ in 0..update_tags.len() {
+        let new = update_tags.pop().unwrap();
+        let mut addnew = true;
+
+        recipe_tags.retain(|t| {
+            // discard unaffected rows
+            if t.label == new {
+                addnew = false;
+                false
+            }
+            // keep
+            else {
+                true
+            }
+        });
+
+        if addnew {
+            // simple insert if the tag is available
+            let mut tag: Option<&Tag> = None;
+            if !available_tags.is_empty() {
+                tag = available_tags.iter().find(|t| t.label == new);
+            }
+            match tag {
+                Some(t) => {
+                    recipes_tags_inserts.push(RecipeTag {
+                        recipe_id,
+                        tag_id: t.id,
+                    });
+                }
+                // need to add ingredients and then use those ids in another recipe_ingredients insert
+                None => {
+                    let mut found = false;
+                    for t in &mut delayed_inserts {
+                        if t.clone() == new {
+                            found = true;
+                        }
+                    }
+                    if !found {
+                        tag_inserts.push(TagDTO::from(TagPostDTO { label: new.clone() }));
+                        delayed_inserts.push(new);
+                    }
+                }
+            }
+        }
+    }
+
+    // delete
+    if !recipe_tags.is_empty() {
+        for _ in 0..(recipe_tags.len() as u32) {
+            delete_ids.push(recipe_tags.pop().unwrap().id);
+        }
+        match diesel::delete(recipes_tags::table)
+            .filter(recipes_tags::tag_id.eq_any(delete_ids))
+            .filter(recipes_tags::recipe_id.eq(recipe_id))
+            .execute(connection)
+        {
+            Ok(_) => (),
+            Err(_) => {
+                println!("DB error on delete.");
+                return Err(Status::InternalServerError);
+            }
+        };
+    }
+
+    // insert
+    // add tags, get ids
+    if !tag_inserts.is_empty() {
+        let new_tags = match diesel::insert_into(tags::table)
+            .values(&tag_inserts)
+            .get_results::<Tag>(connection)
+        {
+            Ok(res) => res,
+            Err(_) => {
+                println!("DB error on tag insert.");
+                return Err(Status::InternalServerError);
+            }
+        };
+
+        for tag in new_tags {
+            for t in &delayed_inserts {
+                if tag.label == t.clone() {
+                    recipes_tags_inserts.push(RecipeTag {
+                        recipe_id,
+                        tag_id: tag.id,
+                    });
+                }
+            }
+        }
+    }
+    // add recipes_tags
+    if !recipes_tags_inserts.is_empty() {
+        match diesel::insert_into(recipes_tags::table)
+            .values(recipes_tags_inserts)
+            .execute(connection)
+        {
+            Ok(_) => (),
+            Err(_) => {
+                println!("DB error on recipes_tags insert.");
+                return Err(Status::InternalServerError);
+            }
+        };
+    }
+
+    match recipes_tags::table
+        .filter(recipes_tags::recipe_id.eq(recipe_id))
+        .inner_join(tags::table)
+        .select(Tag::as_select())
+        .load::<Tag>(connection)
     {
         Ok(res) => Ok(res),
         Err(_) => Err(Status::InternalServerError),

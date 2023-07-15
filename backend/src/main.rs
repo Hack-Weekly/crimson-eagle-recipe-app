@@ -28,7 +28,7 @@ mod tests;
 pub struct LogsDbConn(diesel::PgConnection);
 
 #[launch]
-fn rocket() -> Rocket<Build> {
+async fn rocket() -> Rocket<Build> {
     dotenv().ok();
     let frontend_url = env::var("FRONTEND_URL").expect("FRONTEND_URL must be set");
 

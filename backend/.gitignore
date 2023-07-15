@@ -4,6 +4,7 @@
 
 # Rust Build Files
 target/
+Rocket.toml
 
 # Vim Swap files
 *.swp

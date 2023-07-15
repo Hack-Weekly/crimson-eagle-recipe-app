@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation"
 import React, { useState, useEffect, useContext} from "react"
 import type { Recipe } from "@/lib/types"
 import RecipeThumb from "@/components/RecipeThumb"
-import { UserContext } from "./layout"
+import { UserContext } from "@/context/user-state"
 
 export default function Home() {
 	const [recipes, setRecipes] = useState<Recipe[]>([])

@@ -6,7 +6,7 @@ import { Icon } from "@iconify/react"
 import type { Recipe } from "@/lib/types"
 import BookmarkButton from "@/components/BookmarkButton"
 import InfoTabs from "@/components/InfoTabs"
-import { UserContext } from "../layout"
+import { UserContext } from "@/context/user-state"
 
 type RecipeFullProps = {
     params: {

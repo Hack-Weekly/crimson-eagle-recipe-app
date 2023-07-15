@@ -1,5 +1,6 @@
 export interface Recipe {
-    bookmarked: any;
+    tags: any;
+    bookmarked: boolean;
     id: number;
     title: string;
     servings: string;

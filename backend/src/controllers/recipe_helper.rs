@@ -83,8 +83,8 @@ pub fn get_recipe_elements(
                 .collect::<Vec<IngredientDTO>>();
             rec.tags = tag
                 .into_iter()
-                .map(|(_rt, t)| t.label)
-                .collect::<Vec<String>>();
+                .map(|(_rt, t)| TagDTO::from(t))
+                .collect::<Vec<TagDTO>>();
             rec
         })
         .collect::<Vec<RecipeResultDTO>>();
@@ -112,4 +112,25 @@ pub fn get_recipe_elements(
     }
 
     Ok(recipe_results)
+}
+
+pub fn pagination(page: Option<i64>, per_page: Option<i64>, total: i64) -> (i64, i64, i64) {
+    let page_number = page.unwrap_or(1);
+    let elements_per_page = per_page.unwrap_or(10);
+    let per_page = if elements_per_page < 1 {
+        10
+    } else {
+        elements_per_page
+    };
+    let max_page = (total - 1) / per_page + 1;
+    let current_page = if page_number < 1 {
+        1
+    } else if page_number > max_page {
+        max_page
+    } else {
+        page_number
+    };
+    let offset = elements_per_page * (current_page - 1);
+
+    (current_page, per_page, offset)
 }

@@ -10,8 +10,8 @@ use rocket_cors::{AllowedHeaders, AllowedOrigins, CorsOptions};
 
 mod controllers;
 use controllers::{
-    bookmark_controller, recipe_controller, recipe_update_controller, tag_controller,
-    user_controller,
+    bookmark_controller, recipe_controller, recipe_create_controller, recipe_update_controller,
+    tag_controller, user_controller,
 };
 
 mod apidoc;
@@ -37,11 +37,22 @@ fn rocket() -> Rocket<Build> {
 
     let cors = CorsOptions {
         allowed_origins,
-        allowed_methods: vec![Method::Get, Method::Post, Method::Put, Method::Delete]
-            .into_iter()
-            .map(From::from)
-            .collect(),
-        allowed_headers: AllowedHeaders::some(&["Authorization", "Accept", "Content-Type"]),
+        allowed_methods: vec![
+            Method::Get,
+            Method::Post,
+            Method::Put,
+            Method::Delete,
+            Method::Options,
+        ]
+        .into_iter()
+        .map(From::from)
+        .collect(),
+        allowed_headers: AllowedHeaders::some(&[
+            "Authorization",
+            "Accept",
+            "Content-Type",
+            "Origin",
+        ]),
         allow_credentials: true,
         ..Default::default()
     }
@@ -57,7 +68,7 @@ fn rocket() -> Rocket<Build> {
                 recipe_controller::recipe,
                 recipe_controller::search,
                 recipe_controller::single_recipe,
-                recipe_controller::addrecipes,
+                recipe_create_controller::create_recipe,
                 recipe_update_controller::update_recipe,
                 recipe_controller::delete,
                 tag_controller::tag_list,

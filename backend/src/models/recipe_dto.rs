@@ -49,7 +49,7 @@ pub struct UploadResult {
     pub secure_url: String,
 }
 
-#[derive(Serialize, ToSchema, Debug)]
+#[derive(Serialize, Clone, ToSchema, Debug)]
 #[serde(crate = "rocket::serde")]
 pub struct RecipeResultDTO {
     #[schema(example = 123)]
@@ -90,7 +90,7 @@ pub struct RecipeResultDTO {
     pub created_at: Option<chrono::NaiveDateTime>,
     #[schema(example = json!(Some(chrono::Utc::now())))]
     pub updated_at: Option<chrono::NaiveDateTime>,
-    pub tags: Vec<String>,
+    pub tags: Vec<TagDTO>,
     pub bookmarked: Option<bool>,
     pub owned: Option<bool>,
 }
@@ -111,7 +111,7 @@ impl From<Recipe> for RecipeResultDTO {
             ingredients: Vec::<IngredientDTO>::new(),
             created_at: r.created_at,
             updated_at: r.updated_at,
-            tags: Vec::<String>::new(),
+            tags: Vec::<TagDTO>::new(),
             bookmarked: None,
             owned: None,
         }
@@ -134,7 +134,7 @@ impl From<&Recipe> for RecipeResultDTO {
             ingredients: Vec::<IngredientDTO>::new(),
             created_at: r.created_at,
             updated_at: r.updated_at,
-            tags: Vec::<String>::new(),
+            tags: Vec::<TagDTO>::new(),
             bookmarked: None,
             owned: None,
         }
@@ -185,7 +185,7 @@ pub struct RecipePostDTO {
     #[validate]
     pub ingredients: Option<Vec<IngredientDTO>>,
     #[schema(example = json!(Some(vec!["vegan", "vegetarian"])))]
-    tags: Option<Vec<String>>,
+    pub tags: Option<Vec<String>>,
 }
 
 #[derive(Deserialize, Validate, ToSchema)]
@@ -232,7 +232,37 @@ pub struct RecipePutDTO {
     #[validate]
     pub ingredients: Option<Vec<IngredientDTO>>,
     #[schema(example = json!(Some(vec!["vegan", "vegetarian"])))]
-    tags: Option<Vec<String>>,
+    pub tags: Option<Vec<String>>,
+}
+
+impl From<RecipePostDTO> for RecipesInput {
+    fn from(r: RecipePostDTO) -> Self {
+        Self {
+            title: r.title,
+            servings: r.servings,
+            timer: r.timer,
+            kcal: r.kcal,
+            carbs: r.carbs,
+            proteins: r.proteins,
+            fats: r.fats,
+            image: r.image,
+        }
+    }
+}
+
+impl From<&RecipePostDTO> for RecipesInput {
+    fn from(r: &RecipePostDTO) -> Self {
+        Self {
+            title: r.title.clone(),
+            servings: r.servings.clone(),
+            timer: r.timer,
+            kcal: r.kcal,
+            carbs: r.carbs,
+            proteins: r.proteins,
+            fats: r.fats,
+            image: r.image.clone(),
+        }
+    }
 }
 
 #[derive(Insertable, Associations, Debug)] //PartialEq
@@ -302,7 +332,7 @@ impl From<TagPostDTO> for TagDTO {
     }
 }
 
-#[derive(Insertable, Serialize, Deserialize, Validate, ToSchema)]
+#[derive(Insertable, Serialize, Deserialize, Validate, Clone, ToSchema, Debug)]
 #[serde(crate = "rocket::serde")]
 #[diesel(table_name = tags)]
 pub struct TagDTO {
@@ -319,6 +349,15 @@ impl From<Tag> for TagDTO {
         Self {
             label: t.label,
             slug: t.slug,
+        }
+    }
+}
+
+impl From<&Tag> for TagDTO {
+    fn from(t: &Tag) -> Self {
+        Self {
+            label: t.label.clone(),
+            slug: t.slug.clone(),
         }
     }
 }

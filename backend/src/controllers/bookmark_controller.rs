@@ -1,4 +1,3 @@
-use diesel::dsl::count;
 use diesel::prelude::*;
 use rocket::serde::json::Json;
 
@@ -7,13 +6,14 @@ use crate::models::*;
 use crate::schema::*;
 
 use super::get_recipe_elements;
+use super::pagination;
 
 /// List of bookmarked recipes
 ///
 /// Get all recipes that are bookmarked by the logged in user from the database.
 #[utoipa::path(
     get,
-    path = "/bookmarks",
+    path = "/bookmarks?{page}&{per_page}",
     tag = "recipes",
     responses(
         (status = 200, description = "Bookmarked recipes found succesfully", body = [PaginatedResult<RecipeResultDTO>]),
@@ -22,7 +22,7 @@ use super::get_recipe_elements;
     params(
         ("page" = Option<i64>, Query, description = "Pagination: page number"),
         ("per_page" = Option<i64>, Query, description = "Pagination: results per page"),
-    )
+    ),
 )]
 #[get("/bookmarks?<page>&<per_page>")]
 pub fn bookmarked_list(
@@ -51,28 +51,13 @@ pub fn bookmarked_list(
     {
         Ok(c) => c,
         Err(_) => {
-            return RecipeResponse::Unauthorized(String::from(
+            return RecipeResponse::InternalServerError(String::from(
                 "Database error while counting records.",
             ))
         }
     };
 
-    let page_number = page.unwrap_or(1);
-    let elements_per_page = per_page.unwrap_or(10);
-    let per_page = if elements_per_page < 1 {
-        10
-    } else {
-        elements_per_page
-    };
-    let max_page = (total - 1) / per_page + 1;
-    let current_page = if page_number < 1 {
-        1
-    } else if page_number > max_page {
-        max_page
-    } else {
-        page_number
-    };
-    let offset = elements_per_page * (current_page - 1);
+    let (current_page, per_page, offset) = pagination(page, per_page, total);
 
     let recipes_list = match recipes::table
         .inner_join(bookmarks::table)
@@ -80,7 +65,7 @@ pub fn bookmarked_list(
         .select(Recipe::as_select())
         .order(recipes::updated_at.desc())
         .offset(offset)
-        .limit(elements_per_page)
+        .limit(per_page)
         .load::<Recipe>(connection)
     {
         Ok(res) => res,

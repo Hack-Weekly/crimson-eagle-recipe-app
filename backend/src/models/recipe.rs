@@ -56,7 +56,7 @@ pub struct Tag {
     pub slug: String,
 }
 
-#[derive(Identifiable, Selectable, Queryable, Associations, Debug)]
+#[derive(Identifiable, Selectable, Queryable, Insertable, Associations, Debug)]
 #[diesel(belongs_to(Recipe))]
 #[diesel(belongs_to(Tag))]
 #[diesel(table_name = recipes_tags)]
@@ -92,7 +92,7 @@ pub enum RecipeResponse<T> {
     Ok(Json<T>),
     #[response(status = 201)]
     Created(Json<T>),
-    #[response(status = 400)]
+    #[response(status = 422)]
     BadRequest(String),
     #[response(status = 401)]
     Unauthorized(String),

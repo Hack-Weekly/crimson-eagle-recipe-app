@@ -1,7 +1,7 @@
 import React from "react";
 import { Icon } from "@iconify/react";
 import { Recipe } from "@/lib/types";
-import { jwtToken } from "@/components/UserAuth";
+import { getJwtToken } from "@/components/UserAuth";
 
 interface BookmarkButtonProps {
   recipe: Recipe;
@@ -15,7 +15,7 @@ const BookmarkButton: React.FC<BookmarkButtonProps> = ({ recipe, onBookmark }) =
       const response = await fetch(`https://crimson-eagles-recipe-app.onrender.com/bookmarks/${recipe.id}`, {
         method: "PUT",
         headers: {
-          Authorization: `Bearer ${jwtToken}`,
+          Authorization: `Bearer ${getJwtToken()}`,
         },
       });
       if (response.ok) {

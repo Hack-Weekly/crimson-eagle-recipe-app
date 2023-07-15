@@ -7,12 +7,19 @@ import AddRecipe from "@/components/AddRecipe";
 import UserAuth from "@/components/UserAuth";
 import { Recipe } from "@/lib/types";
 import BookmarkButton from "@/components/BookmarkButton";
-import { jwtToken } from "@/components/UserAuth";
+import { getJwtToken } from "@/components/UserAuth";
+
+interface Tag {
+  label: string;
+  slug: string;
+  checked: boolean;
+}
 
 export default function Home() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [showBookmarkedRecipes, setShowBookmarkedRecipes] = useState(false);
+  const [filterTags, setFilterTags] = useState([]);
 
   const fetchData = async () => {
     try {
@@ -32,23 +39,41 @@ export default function Home() {
       fetchData();
       }, []);
 
-      const fetchBookmarkedRecipes = async () => {
-        try {
-          const response = await fetch("https://crimson-eagles-recipe-app.onrender.com/bookmarks", {
-            headers: {
-              Authorization: `Bearer ${jwtToken}`,
-            },
-          });
-          if (response.ok) {
-            const data = await response.json();
-            setRecipes(data);
-          } else {
-            console.error("Failed to fetch bookmarked recipes");
-          }
-        } catch (error) {
-          console.error("Failed to fetch bookmarked recipes:", error);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('https://crimson-eagles-recipe-app.onrender.com/tags');
+        if (response.ok) {
+          const data = await response.json();
+          setFilterTags(data);
+        } else {
+          console.error('Error retrieving data:', response.status);
         }
-      };
+      } catch (error) {
+        console.error('Error retrieving data:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const fetchBookmarkedRecipes = async () => {
+    try {
+      const response = await fetch("https://crimson-eagles-recipe-app.onrender.com/bookmarks", {
+        headers: {
+          Authorization: `Bearer ${getJwtToken()}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setRecipes(data);
+      } else {
+        console.error("Failed to fetch bookmarked recipes");
+      }
+    } catch (error) {
+      console.error("Failed to fetch bookmarked recipes:", error);
+    }
+  };
   
   const handleSearch = (searchResults: Recipe[]) => {
     setRecipes(searchResults);
@@ -81,6 +106,28 @@ export default function Home() {
     setShowBookmarkedRecipes(false);
   };
 
+  const handleFilterChange = (tag: Tag) => {
+    const updatedTags = filterTags.map((t) => {
+      if (t.slug === tag.slug) {
+        return { ...t, checked: !t.checked };
+      }
+      return t;
+    });
+  
+    setFilterTags(updatedTags);
+  
+    const selectedTags = updatedTags.filter((t) => t.checked);
+    if (selectedTags.length === 0) {
+      fetchData();
+    } else {
+      const filteredRecipes = recipes.filter((recipe) => {
+        return selectedTags.some((tag) => recipe.tags.includes(tag.slug));
+      });
+      setRecipes(filteredRecipes);
+      console.log(recipes)
+    }
+  };
+
   return (
     <main className="h-full w-full flex  flex-col content-center justify-center py-10">
       <div className="flex justify-end items-center gap-12 pr-10 mb-8 ml-8">
@@ -108,11 +155,19 @@ export default function Home() {
       <div className="w-1/4 bg-red-500 text-white flex flex-col text-center justify-start rounded-lg p-3 h-screen">
           <h2 className="text-2xl font-bold mt-4">Filters</h2>
           <div className="flex flex-col justify-start">
-            <label className="flex items-center my-1 text-2xl"><input type = "checkbox" className="h-4 w-4 rounded-sm mr-2 ml-3 flex items-center"/> Vegan </label>
-            <label className="flex items-center my-1 text-2xl"><input type = "checkbox" className="h-4 w-4 rounded-sm mr-2 ml-3 flex items-center"/> High Protein </label>
-            <label className="flex items-center my-1 text-2xl"><input type = "checkbox" className="h-4 w-4 rounded-sm mr-2 ml-3 flex items-center"/> Low Fat </label>
-            <label className="flex items-center my-1 text-2xl"><input type = "checkbox" className="h-4 w-4 rounded-sm mr-2 ml-3 flex items-center"/> Gluten Free </label>
-            <label className="flex items-center my-1 text-2xl"><input type = "checkbox" className="h-4 w-4 rounded-sm mr-2 ml-3 flex items-center"/> Low Carbs </label>
+              {filterTags.map((tag) => (
+                <label
+                  key={tag.slug}
+                  className="flex items-center my-1 text-2xl"
+                >
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded-sm mr-2 ml-3 flex items-center"
+                    onChange={() => handleFilterChange(tag)}
+                  />
+                  {tag.label}
+                </label>
+              ))}
           </div>
       </div>
       <div className="w-3/4">

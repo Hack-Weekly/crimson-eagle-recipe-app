@@ -20,6 +20,7 @@ export default function Home() {
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [showBookmarkedRecipes, setShowBookmarkedRecipes] = useState(false);
   const [filterTags, setFilterTags] = useState([]);
+  const [bookmarkedRecipes, setBookmarkedRecipes] = useState<Recipe[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -56,15 +57,6 @@ export default function Home() {
 
     fetchData();
   }, []);
-
-  const fetchBookmarkedRecipes = async () => {
-    try {
-      const bookmarkedRecipes = recipes.filter((recipe) => recipe.bookmarked);
-      setRecipes(bookmarkedRecipes);
-    } catch (error) {
-      console.error("Failed to fetch bookmarked recipes:", error);
-    }
-  };
   
   const handleSearch = (searchResults: Recipe[]) => {
     setRecipes(searchResults);
@@ -88,13 +80,19 @@ export default function Home() {
     setRecipes(updatedRecipes);
   };
 
+  useEffect(() => {
+    const bookmarkedRecipes = recipes.filter((recipe) => recipe.bookmarked);
+    setBookmarkedRecipes(bookmarkedRecipes);
+  }, [recipes]);
+
   const showBookmarked = () => {
     setShowBookmarkedRecipes(true);
-    fetchBookmarkedRecipes();
+    localStorage.setItem("showBookmarkedRecipes", "true");
   };
 
   const hideBookmarked = () => {
     setShowBookmarkedRecipes(false);
+    localStorage.removeItem("showBookmarkedRecipes");
   };
 
   const handleFilterChange = (tag: Tag) => {
@@ -208,9 +206,7 @@ export default function Home() {
             </button>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 overflow-y-auto">
-              {recipes
-                .filter((recipe) => recipe.bookmarked)
-                .map((recipe) => (
+              {bookmarkedRecipes.map((recipe) => (
                   <div
                     key={recipe.id}
                     className="bg-white rounded-lg shadow-lg p-4 sm:p-6 border border-black mb-8"

@@ -41,6 +41,7 @@ const UserAuth: React.FC = () => {
             const { AuthToken } = await response.json();
             const jwtToken = AuthToken;
             localStorage.setItem('jwtToken', AuthToken);
+            console.log(jwtToken);
             setIsLoggedIn(true);
             setShowForm(false);
           } else if (response) {

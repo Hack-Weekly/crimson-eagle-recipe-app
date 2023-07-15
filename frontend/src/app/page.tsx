@@ -21,23 +21,23 @@ export default function Home() {
   const [showBookmarkedRecipes, setShowBookmarkedRecipes] = useState(false);
   const [filterTags, setFilterTags] = useState([]);
 
-  const fetchData = async () => {
-    try {
-      const response = await fetch("https://crimson-eagles-recipe-app.onrender.com/recipes");
-      const data = await response.json();
-      const recipesWithBookmarkedFlag = data.map((recipe: Recipe) => ({
-        ...recipe,
-        bookmarked: false,
-      }));
-      setRecipes(recipesWithBookmarkedFlag);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-    useEffect(() => {
-      fetchData();
-      }, []);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch("https://crimson-eagles-recipe-app.onrender.com/recipes");
+        const data = await response.json();
+        const recipesWithBookmarkedFlag = data.map((recipe: Recipe) => ({
+          ...recipe,
+          bookmarked: false,
+        }));
+        setRecipes(recipesWithBookmarkedFlag);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+  
+    fetchData();
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -59,17 +59,8 @@ export default function Home() {
 
   const fetchBookmarkedRecipes = async () => {
     try {
-      const response = await fetch("https://crimson-eagles-recipe-app.onrender.com/bookmarks", {
-        headers: {
-          Authorization: `Bearer ${getJwtToken()}`,
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setRecipes(data);
-      } else {
-        console.error("Failed to fetch bookmarked recipes");
-      }
+      const bookmarkedRecipes = recipes.filter((recipe) => recipe.bookmarked);
+      setRecipes(bookmarkedRecipes);
     } catch (error) {
       console.error("Failed to fetch bookmarked recipes:", error);
     }
@@ -258,3 +249,7 @@ export default function Home() {
     </main>
   );
 }
+function fetchData() {
+  throw new Error("Function not implemented.");
+}
+

@@ -1,38 +1,20 @@
 "use client"
 
-import { type Dispatch, type SetStateAction, createContext, useEffect, useState } from "react"
+import { useContext, useEffect, useState } from "react"
 import Link from "next/link";
 import { Icon } from "@iconify/react"
 import AddRecipe from "@/components/AddRecipe"
 import DeleteButton from "@/components/DeleteRecipe"
 import SearchBar from "@/components/SearchBar"
 import UserAuth from "@/components/UserAuth"
-
-type UserState = {
-	isLoggedin: boolean,
-	token: string | null,
-}
-type UserContextProps = {
-	userState: UserState,
-	setUserState: Dispatch<SetStateAction<UserState>>
-}
-export const UserContext = createContext<UserContextProps>({
-	userState: {
-		isLoggedin: false,
-		token: null,
-	},
-	setUserState: () => null,
-})
+import { UserContext, UserState } from "@/context/user-state";
 
 export default function RecipeLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-	const [userState, setUserState] = useState<UserState>({
-		isLoggedin: false,
-		token: null,
-	})
+	const { userState, setUserState } = useContext(UserContext)
 
 	useEffect(() => {
 		const token = localStorage.getItem('jwtToken')

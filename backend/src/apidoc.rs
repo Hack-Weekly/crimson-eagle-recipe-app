@@ -17,7 +17,7 @@ use utoipa::{
         recipe_controller::recipe,
         recipe_controller::search,
         recipe_controller::single_recipe,
-        recipe_controller::addrecipes,
+        recipe_create_controller::create_recipe,
         recipe_update_controller::update_recipe,
         recipe_controller::delete,
         tag_controller::tag_list,

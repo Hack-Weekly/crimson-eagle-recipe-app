@@ -15,18 +15,14 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
       try {
         const response = await fetch(endpoint);
         const data: Pagination<Recipe> = await response.json();
-        if (query) {
-          onSearch(data);
-        } else {
-          onSearch(data.records);
-        }
+        onSearch(data.records); // Call the callback function with the search results
       } catch (error) {
         console.error("An error occurred:", error);
       }
     }, 300) // The delay in ms
 
     return () => clearTimeout(delayDebounceFn)
-  }, [onSearch, query])
+  }, [query])
 
   return (
     <form className="relative text-gray-600 w-1/2">

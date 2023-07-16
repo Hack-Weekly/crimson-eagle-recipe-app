@@ -29,5 +29,5 @@ export type Pagination<T> = {
 }
 
 export type SearchBarProps = {
-  onSearch: (searchResults: Recipe[] | Pagination<Recipe>) => void;
+  onSearch: (searchResults: Recipe[]) => void;
 };

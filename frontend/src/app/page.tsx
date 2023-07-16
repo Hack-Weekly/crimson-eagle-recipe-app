@@ -82,7 +82,7 @@ export default function Home() {
   };
 
   useEffect(() => {
-    console.log(recipes)
+    // console.log(recipes)
     const bookmarkedRecipes = recipes.filter((recipe) => recipe.bookmarked);
     setBookmarkedRecipes(bookmarkedRecipes);
   }, [recipes]);
@@ -115,7 +115,7 @@ export default function Home() {
         return selectedTags.some((tag) => recipe.tags.includes(tag.slug));
       });
       setRecipes(filteredRecipes);
-      console.log(recipes)
+      // console.log(recipes)
     }
   };
 

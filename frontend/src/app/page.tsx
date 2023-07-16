@@ -227,8 +227,8 @@ export default function Home() {
 
       {selectedRecipe && (
               <div className="fixed top-0 left-0 right-0 bottom-0 bg-gray-800 bg-opacity-40 flex justify-center items-center">
-                <div className="bg-white rounded-lg shadow-lg p-6 w-2/4 h-2/4 flex flex-col items-center justify-center overflow-y-scroll">
-                  <h2 className="text-2xl font-bold mb-4">{selectedRecipe.title}</h2>
+                <div className="bg-white rounded-lg shadow-lg p-6 w-2/4 h-3/4 flex flex-col items-center justify-center overflow-y-scroll">
+                  <h2 className="text-2xl font-bold mb-4 mt-10">{selectedRecipe.title}</h2>
                   <p className="text-lg mb-2">Servings: {selectedRecipe.servings}</p>
                   <p className="text-sm mb-2">
                     Created At: {selectedRecipe.created_at || "N/A"}

@@ -8,7 +8,6 @@ import UserAuth from "@/components/UserAuth";
 import { Pagination, Recipe } from "@/lib/types";
 import BookmarkButton from "@/components/BookmarkButton";
 import InfoTabs from "@/components/InfoTabs";
-import { getJwtToken } from "@/components/UserAuth";
 
 interface Tag {
   label: string;

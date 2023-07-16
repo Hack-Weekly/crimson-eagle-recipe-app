@@ -101,12 +101,12 @@ const UserAuth: React.FC = () => {
             {userState.isLoggedin || isLoggedIn ? (
                 <button onClick={logOutUser} className="flex justify-center items-center px-2 py-5 h-6 w-40 bg-red-500 rounded-2xl text-white">
                     <Icon icon="basil:user-solid" className="w-7 h-8" />
-                    <span className="text-lg font-bold"> Log Out </span>
+                    <span className="text-lg font-serif-extrabold"> Log Out </span>
                 </button>
             ) : (
                 <button onClick={openForm} className="flex justify-center items-center px-2 py-5 h-6 w-40 bg-red-500 rounded-2xl text-white">
                     <Icon icon="basil:user-solid" className="w-7 h-8" />
-                    <span className="text-lg font-bold"> Log In </span>
+                    <span className="text-lg font-serif-extrabold"> Log In </span>
                 </button>
             )}
 

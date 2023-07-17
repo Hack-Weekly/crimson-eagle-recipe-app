@@ -21,10 +21,9 @@ const DeleteButton: React.FC<DeleteButtonProps> = ({ onRecipeDeleted }) => {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
-          // Authorization: `Bearer ${getJwtToken()}`, // add this back in once the backend implements authentication 
+          // Authorization: `Bearer ${getJwtToken()}`, // add this back in if the backend implements authentication 
         },
       });
-      console.log(response);
       if (response.ok) {
         console.log("Recipe deleted successfully");
         setInputValue(null);

@@ -1,7 +1,7 @@
 
 import { UserContext } from "@/context/user-state";
 import { Icon } from "@iconify/react";
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import PasswordChecklist from "react-password-checklist"
 
 export const getJwtToken = (): string => {
@@ -13,7 +13,7 @@ const UserAuth: React.FC = () => {
     const [userName, setUserName] = useState("");
     const [userPassword, setUserPassword] = useState("");
     const [showForm, setShowForm] = useState<boolean>(false);
-	const { userState, setUserState } = useContext(UserContext);
+	const {userState, setUserState} = useContext(UserContext);
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
     const [error, setError] = useState<string>("");
 
@@ -92,6 +92,20 @@ const UserAuth: React.FC = () => {
         setUserPassword("");
         setError("");
     }
+
+    useEffect(() => {
+        // get token from localStorage
+        const jwtToken = getJwtToken();
+    
+        if (jwtToken) {
+          // if token exists, set user as logged in
+          setIsLoggedIn(true);
+          setUserState({
+            isLoggedin: true,
+            token: jwtToken,
+          })
+        }
+      }, [setUserState]);
 
     // Render error message if it exists
     const renderError = error ? <div className="text-red-500 mt-2">{error}</div> : null;

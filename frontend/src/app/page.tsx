@@ -22,6 +22,20 @@ export default function Home() {
   const [filterTags, setFilterTags] = useState<Tag[]>([]);
   const [bookmarkedRecipes, setBookmarkedRecipes] = useState<Recipe[]>([]);
 
+  const fetchRecipes = async () => {
+    try {
+      const response = await fetch("https://crimson-eagles-recipe-app.onrender.com/recipes");
+      const data: Pagination<Recipe> = await response.json();
+      const recipesWithBookmarkedFlag: Recipe[] = data.records.map((recipe: Recipe) => ({
+        ...recipe,
+        bookmarked: false,
+      }));
+      setRecipes(recipesWithBookmarkedFlag);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -41,21 +55,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch('https://crimson-eagles-recipe-app.onrender.com/tags');
-        if (response.ok) {
-          const data = await response.json();
-          setFilterTags(data);
-        } else {
-          console.error('Error retrieving data:', response.status);
-        }
-      } catch (error) {
-        console.error('Error retrieving data:', error);
-      }
-    };
-
-    fetchData();
+    fetchRecipes();
   }, []);
   
   const handleSearch = (searchResults: Recipe[]) => {
@@ -63,11 +63,11 @@ export default function Home() {
   };
 
   const handleAddRecipe = () => {
-    fetchData();
+    fetchRecipes();
   };
 
   const handleRecipeDeleted = () => {
-    fetchData(); 
+    fetchRecipes(); 
   };
 
   const handleBookmark = (recipe: Recipe) => {
@@ -228,6 +228,7 @@ export default function Home() {
     </main>
   );
 }
+
 function fetchData() {
   throw new Error("Function not implemented.");
 }

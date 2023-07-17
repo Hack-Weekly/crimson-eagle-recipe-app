@@ -37,21 +37,20 @@ export default function Home() {
   };
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchTags = async () => {
       try {
-        const response = await fetch("https://crimson-eagles-recipe-app.onrender.com/recipes");
-        const data: Pagination<Recipe> = await response.json();
-        const recipesWithBookmarkedFlag: Recipe[] = data.records.map((recipe: Recipe) => ({
-          ...recipe,
-          bookmarked: false,
-        }));
-        setRecipes(recipesWithBookmarkedFlag);
+        const response = await fetch('https://crimson-eagles-recipe-app.onrender.com/tags');
+        if (response.ok) {
+          const data = await response.json();
+          setFilterTags(data);
+        } else {
+          console.error('Error retrieving data:', response.status);
+        }
       } catch (error) {
-        console.log(error);
+        console.error('Error retrieving data:', error);
       }
     };
-  
-    fetchData();
+    fetchTags();
   }, []);
 
   useEffect(() => {
@@ -108,7 +107,7 @@ export default function Home() {
   
     const selectedTags = updatedTags.filter((t) => t.checked);
     if (selectedTags.length === 0) {
-      fetchData();
+      fetchRecipes();
     } else {
       const filteredRecipes = recipes.filter((recipe) => {
         return selectedTags.some((tag) => recipe.tags.includes(tag.slug));
@@ -228,8 +227,3 @@ export default function Home() {
     </main>
   );
 }
-
-function fetchData() {
-  throw new Error("Function not implemented.");
-}
-

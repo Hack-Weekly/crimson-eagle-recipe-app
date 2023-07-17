@@ -56,7 +56,7 @@ const DeleteButton: React.FC<DeleteButtonProps> = ({ onRecipeDeleted }) => {
     <div>
       <button onClick={() => setShowForm(true)} className="flex justify-between items-center px-2 py-5 h-6 w-40 bg-red-500 rounded-2xl text-white">
         <Icon icon="basil:trash-solid" className="w-6 h-8" />
-        <span className="text-lg font-bold"> Delete recipe</span>
+        <span className="text-lg font-serif-extrabold"> Delete recipe</span>
       </button>
       {showForm && (
         <div className="fixed top-0 left-0 right-0 bottom-0 bg-gray-800 bg-opacity-40 flex justify-center items-center">

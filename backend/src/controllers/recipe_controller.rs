@@ -87,7 +87,7 @@ pub fn recipe(
     path = "/recipes/search/{query}?{page}&{per_page}",
     tag = "recipes",
     responses(
-        (status = 200, description = "Recipes found succesfully", body = [RecipeResultDTO]),
+        (status = 200, description = "Recipes found succesfully", body = [PaginatedResult<RecipeResultDTO>]),
         (status = 500, description = "Internal Server Error")
     ),
     params(
@@ -101,24 +101,54 @@ pub fn search(
     query: String,
     page: Option<i64>,
     per_page: Option<i64>,
-) -> Result<Json<Vec<Recipe>>, Status> {
+    key: Result<Jwt, NetworkResponse>,
+) -> RecipeResponse<PaginatedResult<RecipeResultDTO>> {
     let connection = &mut database::establish_connection();
 
-    let page_number = page.unwrap_or(1);
-    let recipes_per_page = per_page.unwrap_or(10);
+    let total: i64 = match recipes.count().get_result(connection) {
+        Ok(c) => c,
+        Err(_) => {
+            return RecipeResponse::InternalServerError(String::from(
+                "Database error while counting records.",
+            ))
+        }
+    };
 
-    let offset = (page_number - 1) * recipes_per_page;
+    let (current_page, per_page, offset) = pagination(page, per_page, total);
 
-    let results = recipes
+    let recipes_list = match recipes
         .filter(title.ilike(format!("%{}%", query)))
-        .order(title.asc())
-        .limit(recipes_per_page)
+        .order(updated_at.desc())
         .offset(offset)
-        .load::<Recipe>(connection);
+        .limit(per_page)
+        .load::<Recipe>(connection)
+    {
+        Ok(res) => res,
+        Err(_) => {
+            return RecipeResponse::InternalServerError(String::from(
+                "Cannot read recipes from the database.",
+            ))
+        }
+    };
 
-    match results {
-        Ok(results) => Ok(Json(results)),
-        Err(_) => Err(Status::InternalServerError),
+    let user_id: Option<i32> = match key {
+        Ok(k) => Some(k.claims.subject_id),
+        Err(_) => None,
+    };
+
+    match get_recipe_elements(recipes_list, connection, user_id) {
+        Ok(res) => {
+            let paginated = PaginatedResult {
+                records: res,
+                total,
+                current_page,
+                per_page,
+            };
+            RecipeResponse::Ok(Json(paginated))
+        }
+        Err(_) => RecipeResponse::InternalServerError(String::from(
+            "Cannot read recipes from the database.",
+        )),
     }
 }
 

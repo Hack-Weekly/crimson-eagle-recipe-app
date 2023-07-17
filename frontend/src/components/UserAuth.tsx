@@ -141,8 +141,8 @@ const UserAuth: React.FC = () => {
                                     required
                                 />
                                 <PasswordChecklist
-                                    rules={["minLength","specialChar","number","capital"]}
-                                    minLength={5}
+                                    rules={["minLength","number","capital"]}
+                                    minLength={6}
                                     value={userPassword}
                                     onChange={(_isValid: any) => {}}
                                 />

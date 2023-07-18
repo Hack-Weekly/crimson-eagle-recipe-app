@@ -2,10 +2,10 @@ use diesel::prelude::*;
 use rocket::http::Status;
 use rocket::serde::json::Json;
 
-use crate::database;
 use crate::models::*;
 use crate::schema::recipes::dsl::*;
 use crate::schema::*;
+use crate::LogsDbConn;
 
 /// Update recipe
 ///
@@ -28,41 +28,48 @@ use crate::schema::*;
     ),
 )]
 #[put("/recipes/<recipe_id>", data = "<updaterecipe>")]
-pub fn update_recipe(
+pub async fn update_recipe(
+    conn: LogsDbConn,
     recipe_id: i32,
     updaterecipe: Json<RecipePutDTO>,
 ) -> Result<Json<RecipeResultDTO>, Status> {
-    let connection = &mut database::establish_connection();
-
-    let recipe: Recipe = match recipes.find(recipe_id).first::<Recipe>(connection) {
+    let updaterecipe = updaterecipe.into_inner();
+    let recipe: Recipe = match conn
+        .run(move |c| recipes.find(recipe_id).first::<Recipe>(c))
+        .await
+    {
         Ok(result) => {
             let new_title = match &updaterecipe.title {
                 Some(t) => {
                     if t.is_empty() {
-                        &result.title
+                        result.title.clone()
                     } else {
-                        t
+                        t.clone()
                     }
                 }
-                None => &result.title,
+                None => result.title.clone(),
             };
             let new_servings = match &updaterecipe.servings {
                 Some(s) => {
                     if s.is_empty() {
-                        &result.servings
+                        result.servings.clone()
                     } else {
-                        s
+                        s.clone()
                     }
                 }
-                None => &result.servings,
+                None => result.servings.clone(),
             };
-            match diesel::update(&result)
-                .set((
-                    title.eq(new_title),
-                    servings.eq(new_servings),
-                    updated_at.eq(diesel::dsl::now), // we have to update this even if title or servings were untouched
-                ))
-                .get_result::<Recipe>(connection)
+            match conn
+                .run(move |c| {
+                    diesel::update(&result)
+                        .set((
+                            title.eq(new_title),
+                            servings.eq(new_servings),
+                            updated_at.eq(diesel::dsl::now), // we have to update this even if title or servings were untouched
+                        ))
+                        .get_result::<Recipe>(c)
+                })
+                .await
             {
                 Ok(res) => res,
                 Err(_) => return Err(Status::InternalServerError),
@@ -73,20 +80,20 @@ pub fn update_recipe(
 
     // get updated instructions
     let recipe_instructions =
-        match update_instructions(recipe_id, &updaterecipe.instructions, connection) {
+        match update_instructions(recipe_id, &updaterecipe.instructions, &conn).await {
             Ok(res) => res,
             Err(_) => return Err(Status::InternalServerError),
         };
 
     // get updated ingredients
     let recipe_ingredients =
-        match update_ingredients(recipe_id, &updaterecipe.ingredients, connection) {
+        match update_ingredients(recipe_id, &updaterecipe.ingredients, &conn).await {
             Ok(res) => res,
             Err(_) => return Err(Status::InternalServerError),
         };
 
     // get updated tags
-    let recipe_tags = match update_tags(recipe_id, &updaterecipe.tags, connection) {
+    let recipe_tags = match update_tags(recipe_id, &updaterecipe.tags, &conn).await {
         Ok(res) => res,
         Err(_) => return Err(Status::InternalServerError),
     };
@@ -108,15 +115,19 @@ pub fn update_recipe(
     Ok(Json(recipe))
 }
 
-fn update_instructions(
+async fn update_instructions(
     recipe_id: i32,
     update: &Option<Vec<String>>,
-    connection: &mut PgConnection,
+    conn: &LogsDbConn,
 ) -> Result<Vec<Instruction>, Status> {
-    let recipe_instructions = match instructions::table
-        .filter(instructions::recipe_id.eq(recipe_id))
-        .order(instructions::display_order.asc())
-        .load::<Instruction>(connection)
+    let recipe_instructions = match conn
+        .run(move |c| {
+            instructions::table
+                .filter(instructions::recipe_id.eq(recipe_id))
+                .order(instructions::display_order.asc())
+                .load::<Instruction>(c)
+        })
+        .await
     {
         Ok(res) => res,
         Err(_) => return Err(Status::InternalServerError),
@@ -140,9 +151,13 @@ fn update_instructions(
         for _ in 0..diff {
             delete_ids.push(old_instructions.pop().unwrap().id);
         }
-        match diesel::delete(instructions::table)
-            .filter(instructions::id.eq_any(delete_ids))
-            .execute(connection)
+        match conn
+            .run(|c| {
+                diesel::delete(instructions::table)
+                    .filter(instructions::id.eq_any(delete_ids))
+                    .execute(c)
+            })
+            .await
         {
             Ok(_) => (),
             Err(_) => {
@@ -164,14 +179,18 @@ fn update_instructions(
             });
             display_order -= 1;
         }
-        match diesel::insert_into(instructions::table)
-            .values(
-                inserts
-                    .into_iter()
-                    .rev()
-                    .collect::<Vec<InstructionInsert>>(),
-            )
-            .execute(connection)
+        match conn
+            .run(|c| {
+                diesel::insert_into(instructions::table)
+                    .values(
+                        inserts
+                            .into_iter()
+                            .rev()
+                            .collect::<Vec<InstructionInsert>>(),
+                    )
+                    .execute(c)
+            })
+            .await
         {
             Ok(_) => (),
             Err(_) => {
@@ -206,7 +225,7 @@ fn update_instructions(
                 update_ids.join(",")
             ));
             println!("Query: {query}");
-            match diesel::sql_query(query).execute(connection) {
+            match conn.run(|c| diesel::sql_query(query).execute(c)).await {
                 Ok(_) => (),
                 Err(_) => {
                     println!("DB error on batch update.");
@@ -217,25 +236,33 @@ fn update_instructions(
     }
 
     // return updated instructions
-    match instructions::table
-        .filter(instructions::recipe_id.eq(recipe_id))
-        .order(instructions::display_order.asc())
-        .load::<Instruction>(connection)
+    match conn
+        .run(move |c| {
+            instructions::table
+                .filter(instructions::recipe_id.eq(recipe_id))
+                .order(instructions::display_order.asc())
+                .load::<Instruction>(c)
+        })
+        .await
     {
         Ok(res) => Ok(res),
         Err(_) => Err(Status::InternalServerError),
     }
 }
 
-fn update_ingredients(
+async fn update_ingredients(
     recipe_id: i32,
     update: &Option<Vec<IngredientDTO>>,
-    connection: &mut PgConnection,
+    conn: &LogsDbConn,
 ) -> Result<Vec<(RecipeIngredient, Ingredient)>, Status> {
-    let recipe_ingredients: Vec<(RecipeIngredient, Ingredient)> = match recipe_ingredients::table
-        .filter(recipe_ingredients::recipe_id.eq(recipe_id))
-        .inner_join(ingredients::table)
-        .load::<(RecipeIngredient, Ingredient)>(connection)
+    let recipe_ingredients: Vec<(RecipeIngredient, Ingredient)> = match conn
+        .run(move |c| {
+            recipe_ingredients::table
+                .filter(recipe_ingredients::recipe_id.eq(recipe_id))
+                .inner_join(ingredients::table)
+                .load::<(RecipeIngredient, Ingredient)>(c)
+        })
+        .await
     {
         Ok(res) => res,
         Err(_) => return Err(Status::InternalServerError),
@@ -256,7 +283,7 @@ fn update_ingredients(
 
     // get all ingredients for inserts, easier than filter by what we need
     // unnecessary query if there won't be any inserts
-    let available_ingredents = match ingredients::table.load::<Ingredient>(connection) {
+    let available_ingredents = match conn.run(|c| ingredients::table.load::<Ingredient>(c)).await {
         Ok(res) => res,
         Err(_) => return Err(Status::InternalServerError),
     };
@@ -325,9 +352,13 @@ fn update_ingredients(
         for _ in 0..(old_ingredients.len() as u32) {
             delete_ids.push(old_ingredients.pop().unwrap().0.id);
         }
-        match diesel::delete(recipe_ingredients::table)
-            .filter(recipe_ingredients::id.eq_any(delete_ids))
-            .execute(connection)
+        match conn
+            .run(|c| {
+                diesel::delete(recipe_ingredients::table)
+                    .filter(recipe_ingredients::id.eq_any(delete_ids))
+                    .execute(c)
+            })
+            .await
         {
             Ok(_) => (),
             Err(_) => {
@@ -340,9 +371,13 @@ fn update_ingredients(
     // insert
     // add ingredients, get ids
     if !ingredient_inserts.is_empty() {
-        let new_ingredients = match diesel::insert_into(ingredients::table)
-            .values(&ingredient_inserts)
-            .get_results::<Ingredient>(connection)
+        let new_ingredients = match conn
+            .run(move |c| {
+                diesel::insert_into(ingredients::table)
+                    .values(&ingredient_inserts)
+                    .get_results::<Ingredient>(c)
+            })
+            .await
         {
             Ok(res) => res,
             Err(_) => return Err(Status::InternalServerError),
@@ -364,14 +399,18 @@ fn update_ingredients(
     }
     // add recipe_ingredients
     if !recipe_ingredients_inserts.is_empty() {
-        match diesel::insert_into(recipe_ingredients::table)
-            .values(
-                recipe_ingredients_inserts
-                    .into_iter()
-                    .rev() // reverse, to keep original order as much as possible
-                    .collect::<Vec<RecipeIngredientInsert>>(),
-            )
-            .execute(connection)
+        match conn
+            .run(|c| {
+                diesel::insert_into(recipe_ingredients::table)
+                    .values(
+                        recipe_ingredients_inserts
+                            .into_iter()
+                            .rev() // reverse, to keep original order as much as possible
+                            .collect::<Vec<RecipeIngredientInsert>>(),
+                    )
+                    .execute(c)
+            })
+            .await
         {
             Ok(_) => (),
             Err(_) => {
@@ -407,7 +446,7 @@ fn update_ingredients(
             update_ids.join(",")
         ));
 
-        match diesel::sql_query(query).execute(connection) {
+        match conn.run(|c| diesel::sql_query(query).execute(c)).await {
             Ok(_) => (),
             Err(_) => {
                 println!("DB error on batch update.");
@@ -416,26 +455,34 @@ fn update_ingredients(
         };
     }
 
-    match recipe_ingredients::table
-        .filter(recipe_ingredients::recipe_id.eq(recipe_id))
-        .inner_join(ingredients::table)
-        .load::<(RecipeIngredient, Ingredient)>(connection)
+    match conn
+        .run(move |c| {
+            recipe_ingredients::table
+                .filter(recipe_ingredients::recipe_id.eq(recipe_id))
+                .inner_join(ingredients::table)
+                .load::<(RecipeIngredient, Ingredient)>(c)
+        })
+        .await
     {
         Ok(res) => Ok(res),
         Err(_) => Err(Status::InternalServerError),
     }
 }
 
-fn update_tags(
+async fn update_tags(
     recipe_id: i32,
     update: &Option<Vec<String>>,
-    connection: &mut PgConnection,
+    conn: &LogsDbConn,
 ) -> Result<Vec<Tag>, Status> {
-    let mut recipe_tags = match recipes_tags::table
-        .filter(recipes_tags::recipe_id.eq(recipe_id))
-        .inner_join(tags::table)
-        .select(Tag::as_select())
-        .load::<Tag>(connection)
+    let mut recipe_tags = match conn
+        .run(move |c| {
+            recipes_tags::table
+                .filter(recipes_tags::recipe_id.eq(recipe_id))
+                .inner_join(tags::table)
+                .select(Tag::as_select())
+                .load::<Tag>(c)
+        })
+        .await
     {
         Ok(res) => res,
         Err(_) => return Err(Status::InternalServerError),
@@ -446,7 +493,7 @@ fn update_tags(
     }
 
     // add tags
-    let available_tags = match tags::table.load::<Tag>(connection) {
+    let available_tags = match conn.run(|c| tags::table.load::<Tag>(c)).await {
         Ok(res) => res,
         Err(_) => return Err(Status::InternalServerError),
     };
@@ -509,10 +556,14 @@ fn update_tags(
         for _ in 0..(recipe_tags.len() as u32) {
             delete_ids.push(recipe_tags.pop().unwrap().id);
         }
-        match diesel::delete(recipes_tags::table)
-            .filter(recipes_tags::tag_id.eq_any(delete_ids))
-            .filter(recipes_tags::recipe_id.eq(recipe_id))
-            .execute(connection)
+        match conn
+            .run(move |c| {
+                diesel::delete(recipes_tags::table)
+                    .filter(recipes_tags::tag_id.eq_any(delete_ids))
+                    .filter(recipes_tags::recipe_id.eq(recipe_id))
+                    .execute(c)
+            })
+            .await
         {
             Ok(_) => (),
             Err(_) => {
@@ -525,9 +576,13 @@ fn update_tags(
     // insert
     // add tags, get ids
     if !tag_inserts.is_empty() {
-        let new_tags = match diesel::insert_into(tags::table)
-            .values(&tag_inserts)
-            .get_results::<Tag>(connection)
+        let new_tags = match conn
+            .run(move |c| {
+                diesel::insert_into(tags::table)
+                    .values(&tag_inserts)
+                    .get_results::<Tag>(c)
+            })
+            .await
         {
             Ok(res) => res,
             Err(_) => {
@@ -549,9 +604,13 @@ fn update_tags(
     }
     // add recipes_tags
     if !recipes_tags_inserts.is_empty() {
-        match diesel::insert_into(recipes_tags::table)
-            .values(recipes_tags_inserts)
-            .execute(connection)
+        match conn
+            .run(|c| {
+                diesel::insert_into(recipes_tags::table)
+                    .values(recipes_tags_inserts)
+                    .execute(c)
+            })
+            .await
         {
             Ok(_) => (),
             Err(_) => {
@@ -561,11 +620,15 @@ fn update_tags(
         };
     }
 
-    match recipes_tags::table
-        .filter(recipes_tags::recipe_id.eq(recipe_id))
-        .inner_join(tags::table)
-        .select(Tag::as_select())
-        .load::<Tag>(connection)
+    match conn
+        .run(move |c| {
+            recipes_tags::table
+                .filter(recipes_tags::recipe_id.eq(recipe_id))
+                .inner_join(tags::table)
+                .select(Tag::as_select())
+                .load::<Tag>(c)
+        })
+        .await
     {
         Ok(res) => Ok(res),
         Err(_) => Err(Status::InternalServerError),

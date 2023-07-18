@@ -16,7 +16,6 @@ use controllers::{
 };
 
 mod apidoc;
-mod database;
 mod jwt;
 mod models;
 mod schema;
@@ -51,12 +50,7 @@ async fn rocket() -> Rocket<Build> {
         .into_iter()
         .map(From::from)
         .collect(),
-        allowed_headers: AllowedHeaders::some(&[
-            "Authorization",
-            "Accept",
-            "Content-Type",
-            "Origin",
-        ]),
+        allowed_headers: AllowedHeaders::all(),
         allow_credentials: true,
         ..Default::default()
     }

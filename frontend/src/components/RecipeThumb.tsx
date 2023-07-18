@@ -68,4 +68,5 @@ const RecipeThumb = ({ recipe, setSelectedRecipe, isLoggedIn, handleBookmark }: 
         </button>
     )
 }
+
 export default RecipeThumb

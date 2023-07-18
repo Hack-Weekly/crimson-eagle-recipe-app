@@ -31,7 +31,7 @@ const BookmarkButton: React.FC<BookmarkButtonProps> = ({ recipe, onBookmark }) =
   return (
     <button
       className={`${
-        recipe.bookmarked ? "bg-green-500" : "bg-gray-300"
+        recipe.bookmarked ? "bg-green-500" : "bg-red-500"
       } flex items-center px-4 py-5 h-6 w-35 rounded-2xl text-white my-4`}
       onClick={handleClick}
     >

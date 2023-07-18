@@ -1,5 +1,6 @@
 import { Icon } from "@iconify/react";
-import React, { useState } from 'react';
+import React, { useState } from "react";
+import { getJwtToken } from "./UserAuth";
 
 interface AddRecipeProps {
   onAdd: () => void;
@@ -29,6 +30,7 @@ const AddRecipe: React.FC<AddRecipeProps> = ({ onAdd }) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${getJwtToken()}`,
           },
           body: JSON.stringify(recipeData),
         }
@@ -55,7 +57,7 @@ const AddRecipe: React.FC<AddRecipeProps> = ({ onAdd }) => {
         onClick={handleAddRecipeClick}
       >
         <Icon icon="basil:add-solid" className="w-8 h-8" />
-        <span className="text-lg font-bold"> Add recipe</span>
+        <span className="text-lg font-serif-extrabold"> Add recipe</span>
       </button>
       {showForm && (
         <div className="fixed top-0 left-0 right-0 bottom-0 bg-gray-800 bg-opacity-40 flex justify-center items-center">

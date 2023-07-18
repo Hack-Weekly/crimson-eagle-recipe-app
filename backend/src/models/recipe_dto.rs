@@ -141,7 +141,7 @@ impl From<&Recipe> for RecipeResultDTO {
     }
 }
 
-#[derive(Deserialize, Validate, ToSchema)]
+#[derive(Deserialize, Validate, ToSchema, Clone)]
 #[serde(crate = "rocket::serde")]
 pub struct RecipePostDTO {
     #[schema(example = "Veggie Pizza")]

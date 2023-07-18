@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import React, { useState, useEffect, useContext} from "react"
-import type { Recipe } from "@/lib/types"
+import type { Recipe, Pagination } from "@/lib/types"
 import RecipeThumb from "@/components/RecipeThumb"
 import { UserContext } from "@/context/user-state"
 
@@ -22,8 +22,8 @@ export default function Home() {
 					credentials: 'include',
 				})
 					.then(res => res.json())
-					.then(res => {
-						const recipesWithBookmarkedFlag = res.map((recipe: Recipe) => ({
+					.then((res: Pagination<Recipe>) => {
+						const recipesWithBookmarkedFlag = res.records.map((recipe: Recipe) => ({
 							...recipe,
 							bookmarked: false,
 						}));
@@ -33,8 +33,8 @@ export default function Home() {
 			} else {
 				fetch("https://crimson-eagles-recipe-app.onrender.com/recipes")
 					.then(res => res.json())
-					.then(res => {
-						const recipesWithBookmarkedFlag = res.map((recipe: Recipe) => ({
+					.then((res: Pagination<Recipe>) => {
+						const recipesWithBookmarkedFlag = res.records.map((recipe: Recipe) => ({
 							...recipe,
 							bookmarked: false,
 						}));

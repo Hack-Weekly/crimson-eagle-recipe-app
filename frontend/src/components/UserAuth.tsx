@@ -1,7 +1,8 @@
 
 import { UserContext } from "@/context/user-state";
 import { Icon } from "@iconify/react";
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
+import PasswordChecklist from "react-password-checklist"
 
 export const getJwtToken = (): string => {
     let jwtToken = localStorage.getItem('jwtToken') || "";
@@ -12,8 +13,8 @@ const UserAuth: React.FC = () => {
     const [userName, setUserName] = useState("");
     const [userPassword, setUserPassword] = useState("");
     const [showForm, setShowForm] = useState<boolean>(false);
-	const { userState, setUserState } = useContext(UserContext)
-    //const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+	const {userState, setUserState} = useContext(UserContext);
+    const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
     const [error, setError] = useState<string>("");
 
     const makeRequest = async (endpoint: string, UserInfo: {username: string, password: string}) => {
@@ -43,7 +44,7 @@ const UserAuth: React.FC = () => {
             console.log('User logged in successfully');
             const { AuthToken } = await response.json();
             localStorage.setItem('jwtToken', AuthToken);
-            // setIsLoggedIn(true);
+            setIsLoggedIn(true);
             setShowForm(false);
             setUserState({
                 isLoggedin: true,
@@ -77,7 +78,7 @@ const UserAuth: React.FC = () => {
 
     const logOutUser = () => {
         localStorage.removeItem('jwtToken');
-        //setIsLoggedIn(false);
+        setIsLoggedIn(false);
         setUserState({
             isLoggedin: false,
             token: null,
@@ -92,27 +93,41 @@ const UserAuth: React.FC = () => {
         setError("");
     }
 
+    useEffect(() => {
+        // get token from localStorage
+        const jwtToken = getJwtToken();
+    
+        if (jwtToken) {
+          // if token exists, set user as logged in
+          setIsLoggedIn(true);
+          setUserState({
+            isLoggedin: true,
+            token: jwtToken,
+          })
+        }
+      }, [setUserState]);
+
     // Render error message if it exists
     const renderError = error ? <div className="text-red-500 mt-2">{error}</div> : null;
 
     return (
         <div>
-            {userState.isLoggedin ? (
+            {userState.isLoggedin || isLoggedIn ? (
                 <button onClick={logOutUser} className="flex justify-center items-center px-2 py-5 h-6 w-40 bg-red-500 rounded-2xl text-white">
                     <Icon icon="basil:user-solid" className="w-7 h-8" />
-                    <span className="text-lg font-bold"> Log Out </span>
+                    <span className="text-lg font-serif-extrabold"> Log Out </span>
                 </button>
             ) : (
                 <button onClick={openForm} className="flex justify-center items-center px-2 py-5 h-6 w-40 bg-red-500 rounded-2xl text-white">
                     <Icon icon="basil:user-solid" className="w-7 h-8" />
-                    <span className="text-lg font-bold"> Log In </span>
+                    <span className="text-lg font-serif-extrabold"> Log In </span>
                 </button>
             )}
 
             {showForm && (
                 <div className="fixed z-10 top-0 left-0 right-0 bottom-0 bg-gray-800 bg-opacity-40 flex justify-center items-center">
                     <div className="bg-white rounded-lg drop-shadow-lg p-6">
-                        <h2 className="text-2xl font-bold mb-4">User Authentication</h2>
+                        <h2 className="text-2xl font-bold mb-4">Welcome to Foodly!</h2>
                         <form>
                             <div className="mb-4">
                                 <label htmlFor="username" className="block font-bold mb-2">
@@ -136,21 +151,27 @@ const UserAuth: React.FC = () => {
                                     value={userPassword}
                                     onChange={(e) => setUserPassword(e.target.value)}
                                     placeholder="Enter Password"
-                                    className="border border-gray-300 rounded px-2 py-1 w-full"
+                                    className="border border-gray-300 rounded px-2 py-1 w-full mb-4"
                                     required
+                                />
+                                <PasswordChecklist
+                                    rules={["minLength","number","capital"]}
+                                    minLength={6}
+                                    value={userPassword}
+                                    onChange={(_isValid: any) => {}}
                                 />
                                 {renderError}
                             </div>
-                            <div className="flex justify-between">
+                            <div className="flex justify-start">
                                 <button 
                                     type="button"
-                                    className="flex justify-between items-center px-2 py-5 h-6 w-38 bg-red-500 rounded-2xl text-white"
+                                    className="flex justify-between items-center px-2 py-5 h-6 w-38 bg-red-500 rounded-2xl text-white m-1"
                                     onClick={logInUser}>
                                     Log In
                                 </button>
                                 <button 
                                     type="button"
-                                    className="flex justify-between items-center px-2 py-5 h-6 w-38 bg-red-500 rounded-2xl text-white"
+                                    className="flex justify-between items-center px-2 py-5 h-6 w-38 bg-red-500 rounded-2xl text-white m-1"
                                     onClick={registerUser}>
                                     Sign Up
                                 </button>

@@ -21,6 +21,13 @@ export interface Recipe {
   updated_at: string | null;
 }
 
+export type Pagination<T> = {
+  records: T[],
+  total: number,
+  current_page: number,
+  per_page: number,
+}
+
 export type SearchBarProps = {
   onSearch: (searchResults: Recipe[]) => void;
 };

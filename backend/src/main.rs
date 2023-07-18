@@ -16,7 +16,6 @@ use controllers::{
 };
 
 mod apidoc;
-mod database;
 mod jwt;
 mod models;
 mod schema;

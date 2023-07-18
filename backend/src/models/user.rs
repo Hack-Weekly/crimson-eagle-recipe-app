@@ -1,15 +1,15 @@
+use crate::jwt::decode_jwt;
 use crate::schema::users;
 use diesel::prelude::*;
-use rocket::Responder;
-use rocket::serde::{Deserialize, Serialize};
-use rocket::request::{Outcome, Request, FromRequest};
-use rocket::http::Status;
-use validator::Validate;
-use validator::ValidationError;
+use jsonwebtoken::errors::Error;
 use lazy_static::lazy_static;
 use regex::Regex;
-use jsonwebtoken::errors::Error;
-use crate::jwt::decode_jwt;
+use rocket::http::Status;
+use rocket::request::{FromRequest, Outcome, Request};
+use rocket::serde::{Deserialize, Serialize};
+use rocket::Responder;
+use validator::Validate;
+use validator::ValidationError;
 
 #[derive(FromForm, Queryable, Serialize)]
 #[serde(crate = "rocket::serde")]
@@ -29,7 +29,10 @@ fn validate_password(password: &str) -> Result<(), ValidationError> {
     let has_number = password.chars().any(|c| c.is_numeric());
     let has_special_char = password.chars().any(|c| "!@#$%^&*".contains(c));
 
-    if has_letter && has_number && (has_special_char || password.chars().all(|c| c.is_alphanumeric())) {
+    if has_letter
+        && has_number
+        && (has_special_char || password.chars().all(|c| c.is_alphanumeric()))
+    {
         Ok(())
     } else {
         Err(ValidationError::new("Password requirements not met"))
@@ -42,7 +45,7 @@ fn validate_password(password: &str) -> Result<(), ValidationError> {
 pub struct NewUser {
     #[validate(regex(path = "USERNAME_REGEX"))]
     pub username: String,
-    #[validate(length(min=6), custom(function = "validate_password"))]
+    #[validate(length(min = 6), custom(function = "validate_password"))]
     pub password: String,
 }
 
@@ -93,12 +96,12 @@ pub struct Response {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Claims {
     pub subject_id: i32,
-    pub exp: usize
+    pub exp: usize,
 }
 
 #[derive(Debug)]
 pub struct Jwt {
-    pub claims: Claims
+    pub claims: Claims,
 }
 
 #[rocket::async_trait]
@@ -112,57 +115,64 @@ impl<'r> FromRequest<'r> for Jwt {
 
         match req.headers().get_one("authorization") {
             None => {
-                let response = Response { 
-                    body: ResponseBody::Message(
-                        String::from("Error validating Jwt token - No token provided")
-                    )
+                let response = Response {
+                    body: ResponseBody::Message(String::from(
+                        "Error validating Jwt token - No token provided",
+                    )),
                 };
 
                 Outcome::Failure((
-                    Status::Unauthorized, 
-                    NetworkResponse::Unauthorized(serde_json::to_string(&response).unwrap())
-                )) 
-            },
+                    Status::Unauthorized,
+                    NetworkResponse::Unauthorized(serde_json::to_string(&response).unwrap()),
+                ))
+            }
             Some(key) => match is_valid(key) {
-                Ok(claims) => Outcome::Success(Jwt {claims}),
+                Ok(claims) => Outcome::Success(Jwt { claims }),
                 Err(err) => match &err.kind() {
                     jsonwebtoken::errors::ErrorKind::ExpiredSignature => {
-                        let response = Response { 
-                            body: ResponseBody::Message(
-                                format!("Error validating Jwt token - Expired Token")
-                            )
+                        let response = Response {
+                            body: ResponseBody::Message(format!(
+                                "Error validating Jwt token - Expired Token"
+                            )),
                         };
 
                         Outcome::Failure((
                             Status::Unauthorized,
-                            NetworkResponse::Unauthorized(serde_json::to_string(&response).unwrap())
-                        )) 
-                    },
+                            NetworkResponse::Unauthorized(
+                                serde_json::to_string(&response).unwrap(),
+                            ),
+                        ))
+                    }
                     jsonwebtoken::errors::ErrorKind::InvalidToken => {
                         let response = Response {
-                            body: ResponseBody::Message(
-                                format!("Error validating Jwt token - Invalid Token")
-                            )
+                            body: ResponseBody::Message(format!(
+                                "Error validating Jwt token - Invalid Token"
+                            )),
                         };
 
                         Outcome::Failure((
                             Status::Unauthorized,
-                            NetworkResponse::Unauthorized(serde_json::to_string(&response).unwrap())
-                        )) 
-                    },
+                            NetworkResponse::Unauthorized(
+                                serde_json::to_string(&response).unwrap(),
+                            ),
+                        ))
+                    }
                     _ => {
-                        let response = Response { 
-                            body: ResponseBody::Message(
-                                format!("Error validating Jwt token - {}", err)
-                            )
+                        let response = Response {
+                            body: ResponseBody::Message(format!(
+                                "Error validating Jwt token - {}",
+                                err
+                            )),
                         };
 
                         Outcome::Failure((
-                            Status::Unauthorized, 
-                            NetworkResponse::Unauthorized(serde_json::to_string(&response).unwrap())
-                        )) 
+                            Status::Unauthorized,
+                            NetworkResponse::Unauthorized(
+                                serde_json::to_string(&response).unwrap(),
+                            ),
+                        ))
                     }
-                }
+                },
             },
         }
     }

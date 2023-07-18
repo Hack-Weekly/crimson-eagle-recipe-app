@@ -2,9 +2,9 @@ use diesel::prelude::*;
 use rocket::http::Status;
 use rocket::serde::json::Json;
 
-use crate::LogsDbConn;
 use crate::models::*;
 use crate::schema::recipes::dsl::*;
+use crate::LogsDbConn;
 
 use super::get_recipe_elements;
 use super::pagination;
@@ -32,7 +32,6 @@ pub async fn recipe(
     per_page: Option<i64>,
     key: Result<Jwt, NetworkResponse>,
 ) -> RecipeResponse<PaginatedResult<RecipeResultDTO>> {
-
     let total: i64 = match conn.run(|c| recipes.count().get_result(c)).await {
         Ok(c) => c,
         Err(_) => {
@@ -44,11 +43,15 @@ pub async fn recipe(
 
     let (current_page, per_page, offset) = pagination(page, per_page, total);
 
-    let recipes_list = match conn.run(move |c| recipes
-        .order(updated_at.desc())
-        .offset(offset)
-        .limit(per_page)
-        .load::<Recipe>(c)).await
+    let recipes_list = match conn
+        .run(move |c| {
+            recipes
+                .order(updated_at.desc())
+                .offset(offset)
+                .limit(per_page)
+                .load::<Recipe>(c)
+        })
+        .await
     {
         Ok(res) => res,
         Err(_) => {
@@ -115,12 +118,16 @@ pub async fn search(
 
     let (current_page, per_page, offset) = pagination(page, per_page, total);
 
-    let recipes_list = match conn.run(move |c| recipes
-        .filter(title.ilike(format!("%{}%", query)))
-        .order(updated_at.desc())
-        .offset(offset)
-        .limit(per_page)
-        .load::<Recipe>(c)).await
+    let recipes_list = match conn
+        .run(move |c| {
+            recipes
+                .filter(title.ilike(format!("%{}%", query)))
+                .order(updated_at.desc())
+                .offset(offset)
+                .limit(per_page)
+                .load::<Recipe>(c)
+        })
+        .await
     {
         Ok(res) => res,
         Err(_) => {
@@ -172,7 +179,10 @@ pub async fn single_recipe(
     recipe_id: i32,
     key: Result<Jwt, NetworkResponse>,
 ) -> RecipeResponse<RecipeResultDTO> {
-    let recipes_list = match conn.run(move |c| recipes.find(recipe_id).load::<Recipe>(c)).await {
+    let recipes_list = match conn
+        .run(move |c| recipes.find(recipe_id).load::<Recipe>(c))
+        .await
+    {
         Ok(res) => res,
         Err(_) => {
             return RecipeResponse::InternalServerError(String::from(
@@ -217,9 +227,9 @@ pub async fn single_recipe(
 )]
 #[delete("/recipes/<del_id>")]
 pub async fn delete(
-    conn: LogsDbConn, 
+    conn: LogsDbConn,
     del_id: i32,
-    key: Result<Jwt, NetworkResponse>
+    key: Result<Jwt, NetworkResponse>,
 ) -> Result<Status, RecipeResponse<RecipeResultDTO>> {
     use crate::schema::recipes;
 
@@ -231,9 +241,12 @@ pub async fn delete(
             )))
         }
     };
-    // TODO: Fix deletion error: 
+    // TODO: Fix deletion error:
     // "update or delete on table "recipes" violates foreign key constraint "recipes_users_recipe_id_fkey" on table "recipes_users""
-    let num_deleted = match conn.run(move |c| diesel::delete(recipes::table.find(del_id)).execute(c)).await {
+    let num_deleted = match conn
+        .run(move |c| diesel::delete(recipes::table.find(del_id)).execute(c))
+        .await
+    {
         Ok(num) => num,
         Err(err) => {
             return Err(RecipeResponse::InternalServerError(format!(

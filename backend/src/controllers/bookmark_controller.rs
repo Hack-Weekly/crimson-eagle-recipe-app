@@ -1,9 +1,9 @@
 use diesel::prelude::*;
 use rocket::serde::json::Json;
 
-use crate::LogsDbConn;
 use crate::models::*;
 use crate::schema::*;
+use crate::LogsDbConn;
 
 use super::get_recipe_elements;
 use super::pagination;
@@ -42,11 +42,15 @@ pub async fn bookmarked_list(
         ));
     }
 
-    let total: i64 = match conn.run(move |c| recipes::table
-        .inner_join(bookmarks::table)
-        .filter(bookmarks::user_id.eq(user_id.unwrap()))
-        .count()
-        .get_result(c)).await
+    let total: i64 = match conn
+        .run(move |c| {
+            recipes::table
+                .inner_join(bookmarks::table)
+                .filter(bookmarks::user_id.eq(user_id.unwrap()))
+                .count()
+                .get_result(c)
+        })
+        .await
     {
         Ok(c) => c,
         Err(_) => {
@@ -58,14 +62,18 @@ pub async fn bookmarked_list(
 
     let (current_page, per_page, offset) = pagination(page, per_page, total);
 
-    let recipes_list = match conn.run(move |c| recipes::table
-        .inner_join(bookmarks::table)
-        .filter(bookmarks::user_id.eq(user_id.unwrap()))
-        .select(Recipe::as_select())
-        .order(recipes::updated_at.desc())
-        .offset(offset)
-        .limit(per_page)
-        .load::<Recipe>(c)).await
+    let recipes_list = match conn
+        .run(move |c| {
+            recipes::table
+                .inner_join(bookmarks::table)
+                .filter(bookmarks::user_id.eq(user_id.unwrap()))
+                .select(Recipe::as_select())
+                .order(recipes::updated_at.desc())
+                .offset(offset)
+                .limit(per_page)
+                .load::<Recipe>(c)
+        })
+        .await
     {
         Ok(res) => res,
         Err(err) => return RecipeResponse::InternalServerError(err.to_string()),
@@ -107,7 +115,11 @@ pub async fn bookmarked_list(
     ),
 )]
 #[put("/bookmarks/<recipe_id>")]
-pub async fn toggle_bookmark(conn: LogsDbConn, recipe_id: i32, key: Result<Jwt, NetworkResponse>) -> RecipeResponse<bool> {
+pub async fn toggle_bookmark(
+    conn: LogsDbConn,
+    recipe_id: i32,
+    key: Result<Jwt, NetworkResponse>,
+) -> RecipeResponse<bool> {
     let user_id: Option<i32> = match key {
         Ok(k) => Some(k.claims.subject_id),
         Err(_) => None,
@@ -118,9 +130,13 @@ pub async fn toggle_bookmark(conn: LogsDbConn, recipe_id: i32, key: Result<Jwt, 
     }
     let user_id = user_id.unwrap();
 
-    match conn.run(move |c| bookmarks::table
-        .find((recipe_id, user_id))
-        .first::<Bookmark>(c)).await
+    match conn
+        .run(move |c| {
+            bookmarks::table
+                .find((recipe_id, user_id))
+                .first::<Bookmark>(c)
+        })
+        .await
     {
         Ok(res) => {
             // remove
@@ -133,12 +149,16 @@ pub async fn toggle_bookmark(conn: LogsDbConn, recipe_id: i32, key: Result<Jwt, 
         }
         Err(diesel::NotFound) => {
             // add
-            match conn.run(move |c| diesel::insert_into(bookmarks::table)
-                .values((
-                    bookmarks::recipe_id.eq(recipe_id),
-                    bookmarks::user_id.eq(user_id),
-                ))
-                .execute(c)).await
+            match conn
+                .run(move |c| {
+                    diesel::insert_into(bookmarks::table)
+                        .values((
+                            bookmarks::recipe_id.eq(recipe_id),
+                            bookmarks::user_id.eq(user_id),
+                        ))
+                        .execute(c)
+                })
+                .await
             {
                 Ok(_) => RecipeResponse::Ok(Json(true)),
                 Err(_) => {

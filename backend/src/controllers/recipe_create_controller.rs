@@ -2,10 +2,10 @@ use diesel::prelude::*;
 use rocket::serde::json::Json;
 use validator::Validate;
 
-use crate::LogsDbConn;
 use crate::models::*;
 use crate::schema::recipes::dsl::*;
 use crate::schema::*;
+use crate::LogsDbConn;
 
 /// Add recipe
 ///
@@ -47,9 +47,13 @@ pub async fn create_recipe(
     let addrecipe = addrecipe.into_inner();
     let addrecipe_clone = addrecipe.clone();
 
-    let mut recipe = match conn.run(move |c| diesel::insert_into(recipes)
-        .values(RecipesInput::from(&addrecipe_clone))
-        .get_result::<Recipe>(c)).await
+    let mut recipe = match conn
+        .run(move |c| {
+            diesel::insert_into(recipes)
+                .values(RecipesInput::from(&addrecipe_clone))
+                .get_result::<Recipe>(c)
+        })
+        .await
     {
         Ok(res) => RecipeResultDTO::from(res),
         Err(_) => {
@@ -60,12 +64,16 @@ pub async fn create_recipe(
     };
 
     // add logged in user as owner
-    match conn.run(move |c| diesel::insert_into(recipes_users::table)
-        .values((
-            recipes_users::recipe_id.eq(recipe.id),
-            recipes_users::user_id.eq(user_id),
-        ))
-        .execute(c)).await
+    match conn
+        .run(move |c| {
+            diesel::insert_into(recipes_users::table)
+                .values((
+                    recipes_users::recipe_id.eq(recipe.id),
+                    recipes_users::user_id.eq(user_id),
+                ))
+                .execute(c)
+        })
+        .await
     {
         Ok(_) => (),
         Err(_) => {
@@ -90,9 +98,13 @@ pub async fn create_recipe(
                 recipe_id: recipe.id,
             })
             .collect::<Vec<InstructionInsert>>();
-        match conn.run(|c| diesel::insert_into(instructions::table)
-            .values(instructions)
-            .execute(c)).await
+        match conn
+            .run(|c| {
+                diesel::insert_into(instructions::table)
+                    .values(instructions)
+                    .execute(c)
+            })
+            .await
         {
             Ok(_) => (),
             Err(_) => {
@@ -106,14 +118,15 @@ pub async fn create_recipe(
 
     // add instructions
     if addrecipe.ingredients.is_some() && !addrecipe.ingredients.clone().unwrap().is_empty() {
-        let available_ingredents = match conn.run(|c| ingredients::table.load::<Ingredient>(c)).await {
-            Ok(res) => res,
-            Err(_) => {
-                return RecipeResponse::InternalServerError(String::from(
-                    "Cannot load ingredients from the database.",
-                ))
-            }
-        };
+        let available_ingredents =
+            match conn.run(|c| ingredients::table.load::<Ingredient>(c)).await {
+                Ok(res) => res,
+                Err(_) => {
+                    return RecipeResponse::InternalServerError(String::from(
+                        "Cannot load ingredients from the database.",
+                    ))
+                }
+            };
 
         let mut recipe_ingredients_inserts = Vec::<RecipeIngredientInsert>::new();
         let mut ingredient_inserts = Vec::<IngredientInsert>::new();
@@ -158,9 +171,13 @@ pub async fn create_recipe(
 
         // add ingredients, get ids
         if !ingredient_inserts.is_empty() {
-            let new_ingredients = match conn.run(move |c| diesel::insert_into(ingredients::table)
-                .values(&ingredient_inserts)
-                .get_results::<Ingredient>(c)).await
+            let new_ingredients = match conn
+                .run(move |c| {
+                    diesel::insert_into(ingredients::table)
+                        .values(&ingredient_inserts)
+                        .get_results::<Ingredient>(c)
+                })
+                .await
             {
                 Ok(res) => res,
                 Err(_) => {
@@ -186,14 +203,18 @@ pub async fn create_recipe(
         }
         // add recipe_ingredients
         if !recipe_ingredients_inserts.is_empty() {
-            match conn.run(|c| diesel::insert_into(recipe_ingredients::table)
-                .values(
-                    recipe_ingredients_inserts
-                        .into_iter()
-                        .rev() // reverse, to keep original order as much as possible
-                        .collect::<Vec<RecipeIngredientInsert>>(),
-                )
-                .execute(c)).await
+            match conn
+                .run(|c| {
+                    diesel::insert_into(recipe_ingredients::table)
+                        .values(
+                            recipe_ingredients_inserts
+                                .into_iter()
+                                .rev() // reverse, to keep original order as much as possible
+                                .collect::<Vec<RecipeIngredientInsert>>(),
+                        )
+                        .execute(c)
+                })
+                .await
             {
                 Ok(_) => (),
                 Err(_) => {
@@ -255,9 +276,13 @@ pub async fn create_recipe(
 
         // add tags, get ids
         if !tag_inserts.is_empty() {
-            let new_tags = match conn.run(move |c| diesel::insert_into(tags::table)
-                .values(&tag_inserts)
-                .get_results::<Tag>(c)).await
+            let new_tags = match conn
+                .run(move |c| {
+                    diesel::insert_into(tags::table)
+                        .values(&tag_inserts)
+                        .get_results::<Tag>(c)
+                })
+                .await
             {
                 Ok(res) => res,
                 Err(_) => {
@@ -281,9 +306,13 @@ pub async fn create_recipe(
         }
         // add recipes_tags
         if !recipes_tags_inserts.is_empty() {
-            match conn.run(|c| diesel::insert_into(recipes_tags::table)
-                .values(recipes_tags_inserts)
-                .execute(c)).await
+            match conn
+                .run(|c| {
+                    diesel::insert_into(recipes_tags::table)
+                        .values(recipes_tags_inserts)
+                        .execute(c)
+                })
+                .await
             {
                 Ok(_) => (),
                 Err(_) => {

@@ -1,25 +1,29 @@
-use chrono::Utc;
-use jsonwebtoken::{encode, decode, EncodingKey, DecodingKey, Algorithm, Header, Validation};
-use jsonwebtoken::errors::{Error, ErrorKind};
-use std::env; 
 use crate::models::*;
+use chrono::Utc;
+use jsonwebtoken::errors::{Error, ErrorKind};
+use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
+use std::env;
 
 pub fn create_jwt(id: i32) -> Result<String, Error> {
-    let secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set."); 
+    let secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set.");
 
     let expiration = Utc::now()
         .checked_add_signed(chrono::Duration::hours(6))
         .expect("Invalid timestamp")
         .timestamp();
-    
+
     let claims = Claims {
         subject_id: id,
-        exp: expiration as usize
-    }; 
+        exp: expiration as usize,
+    };
 
     let header = Header::new(Algorithm::HS512);
-    
-    encode(&header, &claims, &EncodingKey::from_secret(secret.as_bytes()))
+
+    encode(
+        &header,
+        &claims,
+        &EncodingKey::from_secret(secret.as_bytes()),
+    )
 }
 
 pub fn decode_jwt(token: String) -> Result<Claims, ErrorKind> {
@@ -32,6 +36,6 @@ pub fn decode_jwt(token: String) -> Result<Claims, ErrorKind> {
         &Validation::new(Algorithm::HS512),
     ) {
         Ok(token) => Ok(token.claims),
-        Err(err) => Err(err.kind().to_owned())
+        Err(err) => Err(err.kind().to_owned()),
     }
 }

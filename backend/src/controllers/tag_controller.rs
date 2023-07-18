@@ -2,7 +2,7 @@ use diesel::prelude::*;
 use rocket::http::Status;
 use rocket::serde::json::Json;
 
-use crate::database;
+use crate::LogsDbConn;
 use crate::models::*;
 use crate::schema::*;
 
@@ -19,9 +19,8 @@ use crate::schema::*;
     )
 )]
 #[get("/tags")]
-pub fn tag_list() -> Result<Json<Vec<TagDTO>>, Status> {
-    let connection = &mut database::establish_connection();
-    match tags::table.load::<Tag>(connection) {
+pub async fn tag_list(conn: LogsDbConn) -> Result<Json<Vec<TagDTO>>, Status> {
+    match conn.run(|c| tags::table.load::<Tag>(c)).await {
         Ok(t) => Ok(Json(
             t.into_iter().map(TagDTO::from).collect::<Vec<TagDTO>>(),
         )),
@@ -45,12 +44,10 @@ pub fn tag_list() -> Result<Json<Vec<TagDTO>>, Status> {
     )
 )]
 #[get("/tags/<tag_slug>")]
-pub fn single_tag(tag_slug: String) -> Result<Json<TagDTO>, Status> {
-    let connection = &mut database::establish_connection();
-
-    match tags::table
+pub async fn single_tag(conn: LogsDbConn, tag_slug: String) -> Result<Json<TagDTO>, Status> {
+    match conn.run(|c| tags::table
         .filter(tags::slug.eq(tag_slug))
-        .first::<Tag>(connection)
+        .first::<Tag>(c)).await
     {
         Ok(res) => Ok(Json(TagDTO::from(res))),
         Err(_) => Err(Status::NotFound),
@@ -75,12 +72,10 @@ pub fn single_tag(tag_slug: String) -> Result<Json<TagDTO>, Status> {
     ),
 )]
 #[post("/tags", data = "<tag>")]
-pub fn create_tag(tag: Json<TagPostDTO>) -> Result<Json<TagDTO>, Status> {
-    let connection = &mut database::establish_connection();
-
-    match diesel::insert_into(tags::table)
+pub async fn create_tag(conn: LogsDbConn, tag: Json<TagPostDTO>) -> Result<Json<TagDTO>, Status> {
+    match conn.run(|c| diesel::insert_into(tags::table)
         .values(TagDTO::from(tag.into_inner()))
-        .get_result::<Tag>(connection)
+        .get_result::<Tag>(c)).await
     {
         Ok(t) => {
             Ok(Json(TagDTO::from(t)))
@@ -112,36 +107,34 @@ pub fn create_tag(tag: Json<TagPostDTO>) -> Result<Json<TagDTO>, Status> {
     ),
 )]
 #[put("/tags/<tag_slug>/<recipe_id>")]
-pub fn toggle_tag(tag_slug: String, recipe_id: i32) -> Result<Json<Vec<TagDTO>>, Status> {
-    let connection = &mut database::establish_connection();
-
-    let tag = match tags::table
+pub async fn toggle_tag(conn: LogsDbConn, tag_slug: String, recipe_id: i32) -> Result<Json<Vec<TagDTO>>, Status> {
+    let tag = match conn.run(|c| tags::table
         .filter(tags::slug.eq(tag_slug))
-        .first::<Tag>(connection)
+        .first::<Tag>(c)).await
     {
         Ok(res) => res,
         Err(_) => return Err(Status::NotFound),
     };
 
-    match recipes_tags::table
+    match conn.run(move |c| recipes_tags::table
         .find((tag.id, recipe_id))
-        .first::<RecipeTag>(connection)
+        .first::<RecipeTag>(c)).await
     {
         Ok(res) => {
             // remove
-            match diesel::delete(&res).execute(connection) {
+            match conn.run(move |c| diesel::delete(&res).execute(c)).await {
                 Ok(_) => (),
                 Err(_) => return Err(Status::InternalServerError),
             }
         }
         Err(diesel::NotFound) => {
             // add
-            match diesel::insert_into(recipes_tags::table)
+            match conn.run(move |c| diesel::insert_into(recipes_tags::table)
                 .values((
                     recipes_tags::recipe_id.eq(recipe_id),
                     recipes_tags::tag_id.eq(tag.id),
                 ))
-                .execute(connection)
+                .execute(c)).await
             {
                 Ok(_) => (),
                 Err(_) => return Err(Status::InternalServerError),
@@ -150,11 +143,11 @@ pub fn toggle_tag(tag_slug: String, recipe_id: i32) -> Result<Json<Vec<TagDTO>>,
         Err(_) => return Err(Status::InternalServerError),
     }
 
-    match recipes_tags::table
+    match conn.run(move |c| recipes_tags::table
         .filter(recipes_tags::recipe_id.eq(recipe_id))
         .inner_join(tags::table)
         .select(Tag::as_select())
-        .load::<Tag>(connection)
+        .load::<Tag>(c)).await
     {
         Ok(t) => Ok(Json(
             t.into_iter().map(TagDTO::from).collect::<Vec<TagDTO>>(),

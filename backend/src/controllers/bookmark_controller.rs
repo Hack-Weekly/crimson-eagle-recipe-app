@@ -1,7 +1,7 @@
 use diesel::prelude::*;
 use rocket::serde::json::Json;
 
-use crate::database;
+use crate::LogsDbConn;
 use crate::models::*;
 use crate::schema::*;
 
@@ -25,7 +25,8 @@ use super::pagination;
     ),
 )]
 #[get("/bookmarks?<page>&<per_page>")]
-pub fn bookmarked_list(
+pub async fn bookmarked_list(
+    conn: LogsDbConn,
     page: Option<i64>,
     per_page: Option<i64>,
     key: Result<Jwt, NetworkResponse>,
@@ -41,13 +42,11 @@ pub fn bookmarked_list(
         ));
     }
 
-    let connection = &mut database::establish_connection();
-
-    let total: i64 = match recipes::table
+    let total: i64 = match conn.run(move |c| recipes::table
         .inner_join(bookmarks::table)
         .filter(bookmarks::user_id.eq(user_id.unwrap()))
         .count()
-        .get_result(connection)
+        .get_result(c)).await
     {
         Ok(c) => c,
         Err(_) => {
@@ -59,20 +58,20 @@ pub fn bookmarked_list(
 
     let (current_page, per_page, offset) = pagination(page, per_page, total);
 
-    let recipes_list = match recipes::table
+    let recipes_list = match conn.run(move |c| recipes::table
         .inner_join(bookmarks::table)
         .filter(bookmarks::user_id.eq(user_id.unwrap()))
         .select(Recipe::as_select())
         .order(recipes::updated_at.desc())
         .offset(offset)
         .limit(per_page)
-        .load::<Recipe>(connection)
+        .load::<Recipe>(c)).await
     {
         Ok(res) => res,
         Err(err) => return RecipeResponse::InternalServerError(err.to_string()),
     };
 
-    match get_recipe_elements(recipes_list, connection, user_id) {
+    match get_recipe_elements(recipes_list, conn, user_id).await {
         Ok(res) => {
             let paginated = PaginatedResult {
                 records: res,
@@ -108,7 +107,7 @@ pub fn bookmarked_list(
     ),
 )]
 #[put("/bookmarks/<recipe_id>")]
-pub fn toggle_bookmark(recipe_id: i32, key: Result<Jwt, NetworkResponse>) -> RecipeResponse<bool> {
+pub async fn toggle_bookmark(conn: LogsDbConn, recipe_id: i32, key: Result<Jwt, NetworkResponse>) -> RecipeResponse<bool> {
     let user_id: Option<i32> = match key {
         Ok(k) => Some(k.claims.subject_id),
         Err(_) => None,
@@ -119,15 +118,13 @@ pub fn toggle_bookmark(recipe_id: i32, key: Result<Jwt, NetworkResponse>) -> Rec
     }
     let user_id = user_id.unwrap();
 
-    let connection = &mut database::establish_connection();
-
-    match bookmarks::table
+    match conn.run(move |c| bookmarks::table
         .find((recipe_id, user_id))
-        .first::<Bookmark>(connection)
+        .first::<Bookmark>(c)).await
     {
         Ok(res) => {
             // remove
-            match diesel::delete(&res).execute(connection) {
+            match conn.run(move |c| diesel::delete(&res).execute(c)).await {
                 Ok(_) => RecipeResponse::Ok(Json(false)),
                 Err(_) => {
                     RecipeResponse::InternalServerError(String::from("Error removing bookmark."))
@@ -136,12 +133,12 @@ pub fn toggle_bookmark(recipe_id: i32, key: Result<Jwt, NetworkResponse>) -> Rec
         }
         Err(diesel::NotFound) => {
             // add
-            match diesel::insert_into(bookmarks::table)
+            match conn.run(move |c| diesel::insert_into(bookmarks::table)
                 .values((
                     bookmarks::recipe_id.eq(recipe_id),
                     bookmarks::user_id.eq(user_id),
                 ))
-                .execute(connection)
+                .execute(c)).await
             {
                 Ok(_) => RecipeResponse::Ok(Json(true)),
                 Err(_) => {

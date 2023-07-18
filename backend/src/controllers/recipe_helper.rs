@@ -1,65 +1,65 @@
 use diesel::prelude::*;
 
-use crate::{models::*, schema::*};
+use crate::{models::*, schema::*, LogsDbConn};
 
-pub fn get_recipe_elements(
+pub async fn get_recipe_elements(
     recipes_list: Vec<Recipe>,
-    connection: &mut PgConnection,
+    conn: LogsDbConn,
     user_id: Option<i32>,
 ) -> Result<Vec<RecipeResultDTO>, String> {
-    // get instructions
-    let instructions_list: Vec<Instruction> = match Instruction::belonging_to(&recipes_list)
-        .order(instructions::display_order.asc())
-        .load::<Instruction>(connection)
-    {
-        Ok(res) => res,
-        Err(_) => return Err(String::from("Cannot read instructions from the database.")),
-    };
-
-    // get ingredients
-    let ingredients_list: Vec<(RecipeIngredient, Ingredient)> =
-        match RecipeIngredient::belonging_to(&recipes_list)
-            .inner_join(ingredients::table)
-            .load::<(RecipeIngredient, Ingredient)>(connection)
+    let recipe_results = conn.run(move |c| {
+        // get instructions
+        let instructions_list: Vec<Instruction> = match Instruction::belonging_to(&recipes_list)
+            .order(instructions::display_order.asc())
+            .load::<Instruction>(c)
         {
             Ok(res) => res,
-            Err(_) => return Err(String::from("Cannot read ingredients from the database.")),
+            Err(_) => return Err(String::from("Cannot read instructions from the database.")),
         };
-    let ingredients_grouped = ingredients_list.grouped_by(&recipes_list);
 
-    // get tags
-    let tags_list: Vec<(RecipeTag, Tag)> = match RecipeTag::belonging_to(&recipes_list)
-        .inner_join(tags::table)
-        .load::<(RecipeTag, Tag)>(connection)
-    {
-        Ok(res) => res,
-        Err(_) => return Err(String::from("Cannot read tags from the database.")),
-    };
-    let tags_grouped = tags_list.grouped_by(&recipes_list);
+        // get ingredients
+        let ingredients_list: Vec<(RecipeIngredient, Ingredient)> =
+            match RecipeIngredient::belonging_to(&recipes_list)
+                .inner_join(ingredients::table)
+                .load::<(RecipeIngredient, Ingredient)>(c)
+            {
+                Ok(res) => res,
+                Err(_) => return Err(String::from("Cannot read ingredients from the database.")),
+            };
+        let ingredients_grouped = ingredients_list.grouped_by(&recipes_list);
 
-    // if user is logged in, get bookmarks
-    let mut bookmarks_grouped = Vec::<Vec<Bookmark>>::new();
-    let mut owned_grouped = Vec::<Vec<RecipeUser>>::new();
-    if user_id.is_some() {
-        let id = user_id.unwrap();
-        // TODO add ownership
-        let bookmarks_list: Vec<Bookmark> = match Bookmark::belonging_to(&recipes_list)
-            .filter(bookmarks::user_id.eq(id))
-            .load::<Bookmark>(connection)
+        // get tags
+        let tags_list: Vec<(RecipeTag, Tag)> = match RecipeTag::belonging_to(&recipes_list)
+            .inner_join(tags::table)
+            .load::<(RecipeTag, Tag)>(c)
         {
             Ok(res) => res,
-            Err(_) => return Err(String::from("Cannot read bookmarks from the database.")),
+            Err(_) => return Err(String::from("Cannot read tags from the database.")),
         };
-        bookmarks_grouped = bookmarks_list.grouped_by(&recipes_list);
-        let owned_list: Vec<RecipeUser> = match RecipeUser::belonging_to(&recipes_list)
-            .filter(recipes_users::user_id.eq(id))
-            .load::<RecipeUser>(connection)
-        {
-            Ok(res) => res,
-            Err(_) => return Err(String::from("Cannot read ownership from the database.")),
-        };
-        owned_grouped = owned_list.grouped_by(&recipes_list);
-    }
+        let tags_grouped = tags_list.grouped_by(&recipes_list);
+
+        // if user is logged in, get bookmarks
+        let mut bookmarks_grouped = Vec::<Vec<Bookmark>>::new();
+        let mut owned_grouped = Vec::<Vec<RecipeUser>>::new();
+        if let Some(id) = user_id {
+            // TODO add ownership
+            let bookmarks_list: Vec<Bookmark> = match Bookmark::belonging_to(&recipes_list)
+                .filter(bookmarks::user_id.eq(id))
+                .load::<Bookmark>(c)
+            {
+                Ok(res) => res,
+                Err(_) => return Err(String::from("Cannot read bookmarks from the database.")),
+            };
+            bookmarks_grouped = bookmarks_list.grouped_by(&recipes_list);
+            let owned_list: Vec<RecipeUser> = match RecipeUser::belonging_to(&recipes_list)
+                .filter(recipes_users::user_id.eq(id))
+                .load::<RecipeUser>(c)
+            {
+                Ok(res) => res,
+                Err(_) => return Err(String::from("Cannot read ownership from the database.")),
+            };
+            owned_grouped = owned_list.grouped_by(&recipes_list);
+        }
 
     let mut recipe_results = instructions_list
         .grouped_by(&recipes_list)
@@ -110,6 +110,8 @@ pub fn get_recipe_elements(
             })
             .collect::<Vec<RecipeResultDTO>>();
     }
+        Ok::<_, String>(recipe_results)
+    }).await?;
 
     Ok(recipe_results)
 }

@@ -1,5 +1,6 @@
 import { Icon } from "@iconify/react";
-import React, { useState } from 'react';
+import React, { useState } from "react";
+import { getJwtToken } from "./UserAuth";
 
 interface AddRecipeProps {
   onAdd: () => void;
@@ -29,6 +30,7 @@ const AddRecipe: React.FC<AddRecipeProps> = ({ onAdd }) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${getJwtToken()}`,
           },
           body: JSON.stringify(recipeData),
         }

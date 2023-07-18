@@ -22,26 +22,22 @@ export default function Home() {
   const [filterTags, setFilterTags] = useState<Tag[]>([]);
   const [bookmarkedRecipes, setBookmarkedRecipes] = useState<Recipe[]>([]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch("https://crimson-eagles-recipe-app.onrender.com/recipes");
-        const data: Pagination<Recipe> = await response.json();
-        const recipesWithBookmarkedFlag: Recipe[] = data.records.map((recipe: Recipe) => ({
-          ...recipe,
-          bookmarked: false,
-        }));
-        setRecipes(recipesWithBookmarkedFlag);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-  
-    fetchData();
-  }, []);
+  const fetchRecipes = async () => {
+    try {
+      const response = await fetch("https://crimson-eagles-recipe-app.onrender.com/recipes");
+      const data: Pagination<Recipe> = await response.json();
+      const recipesWithBookmarkedFlag: Recipe[] = data.records.map((recipe: Recipe) => ({
+        ...recipe,
+        bookmarked: false,
+      }));
+      setRecipes(recipesWithBookmarkedFlag);
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchTags = async () => {
       try {
         const response = await fetch('https://crimson-eagles-recipe-app.onrender.com/tags');
         if (response.ok) {
@@ -54,8 +50,11 @@ export default function Home() {
         console.error('Error retrieving data:', error);
       }
     };
+    fetchTags();
+  }, []);
 
-    fetchData();
+  useEffect(() => {
+    fetchRecipes();
   }, []);
   
   const handleSearch = (searchResults: Recipe[]) => {
@@ -63,11 +62,11 @@ export default function Home() {
   };
 
   const handleAddRecipe = () => {
-    fetchData();
+    fetchRecipes();
   };
 
   const handleRecipeDeleted = () => {
-    fetchData(); 
+    fetchRecipes(); 
   };
 
   const handleBookmark = (recipe: Recipe) => {
@@ -108,7 +107,7 @@ export default function Home() {
   
     const selectedTags = updatedTags.filter((t) => t.checked);
     if (selectedTags.length === 0) {
-      fetchData();
+      fetchRecipes();
     } else {
       const filteredRecipes = recipes.filter((recipe) => {
         return selectedTags.some((tag) => recipe.tags.includes(tag.slug));
@@ -228,7 +227,3 @@ export default function Home() {
     </main>
   );
 }
-function fetchData() {
-  throw new Error("Function not implemented.");
-}
-

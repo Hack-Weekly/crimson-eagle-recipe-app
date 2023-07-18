@@ -1,9 +1,0 @@
-[debug]
-address = "127.0.0.1"
-
-[release]
-address = "0.0.0.0"
-
-[global.databases.postgres_logs]
-url = "postgres://crimson:iuGC5ZI7avqxnJNMjyzRI1e22Rm0AfKP@dpg-cift75tph6erq6haoaag-a.frankfurt-postgres.render.com/recipedb_fzw2"
-timeout = 60

@@ -1,33 +1,31 @@
 "use client"
 
+import Link from "next/link"
 import { Icon } from "@iconify/react"
 import type { Recipe } from "@/lib/types"
-import BookmarkButton from "./BookmarkButton"
 
 type RecipeThumbProps = {
     recipe: Recipe,
-    setSelectedRecipe: (recipe: Recipe) => void,
     isLoggedIn: boolean,
-    handleBookmark: (recipe: Recipe) => void,
+    handleBookmark: (id: number) => void,
 }
-const RecipeThumb = ({ recipe, setSelectedRecipe, isLoggedIn, handleBookmark }: RecipeThumbProps) => {
+const RecipeThumb = ({ recipe, isLoggedIn, handleBookmark }: RecipeThumbProps) => {
 
     const updated_at = recipe.updated_at ? new Date(recipe.updated_at)
         .toLocaleDateString('en-us', { year:"numeric", month:"short", day:"numeric"})
         : 'N/A'
 
     return (
-        <button
+        <Link href={ `/recipes/${ recipe.id }` }
             key={recipe.id}
             title={ recipe.title }
             className="flex flex-col justify-start bg-white rounded-lg shadow-lg border border-black
                 relative px-4 pt-4 pb-16 sm:px-6 sm:t-6 text-left"
-            onClick={() => setSelectedRecipe(recipe)}
         >
             <img className="w-full aspect-square mb-4 object-cover"
                 src={ `https://source.unsplash.com/random/?food#${ new Date().getTime() }` }
                 alt={ recipe.title } />
-            <h2 className="text-2xl font-bold mb-2 overflow-hidden truncate">{ recipe.title }</h2>
+            <h2 className="w-full text-2xl font-bold mb-2 truncate">{ recipe.title }</h2>
             <div className="flex justify-between items-center">
                 <p className="text-lg mb-2">Servings: { recipe.servings }</p>
                 <p className="flex items-center text-gray-500">
@@ -62,10 +60,22 @@ const RecipeThumb = ({ recipe, setSelectedRecipe, isLoggedIn, handleBookmark }: 
             </p>
             { isLoggedIn && (
                 <div className="absolute bottom-0 right-4">
-                    <BookmarkButton recipe={ recipe } onBookmark={ handleBookmark } />
+                    <button className={`${ recipe.bookmarked ? "bg-green-500" : "bg-red-500" }
+                        flex items-center px-4 py-5 h-6 w-35 rounded-2xl text-white my-4`}
+                        onClick={ () => handleBookmark(recipe.id) }
+                    >
+                        { recipe.bookmarked ? (
+                        <Icon icon="carbon:checkmark-filled" />
+                        ) : (
+                        <Icon icon="carbon:add-filled" />
+                        ) }
+                        <span className="ml-2">
+                            { recipe.bookmarked ? "Bookmarked" : "Bookmark" }
+                        </span>
+                    </button>
                 </div>
             ) }
-        </button>
+        </Link>
     )
 }
 

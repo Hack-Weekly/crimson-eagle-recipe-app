@@ -28,6 +28,16 @@ export type Pagination<T> = {
   per_page: number,
 }
 
+export type Tag = {
+    label: string,
+    slug: string,
+}
+
+export type SearchState = {
+	query: string | null,
+	filter: Tag[],
+}
+
 export type SearchBarProps = {
   onSearch: (searchResults: Recipe[]) => void;
-};
+}

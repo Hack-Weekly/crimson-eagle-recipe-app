@@ -1,12 +1,11 @@
 "use client"
 
-import { useContext, useEffect, useState } from "react"
+import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Icon } from "@iconify/react"
-import type { Recipe } from "@/lib/types"
-import BookmarkButton from "@/components/BookmarkButton"
 import InfoTabs from "@/components/InfoTabs"
-import { UserContext } from "@/context/user-state"
+import { useUserContext } from "@/context/user-state"
+import useRecipeStore from "@/context/recipe-store"
 
 type RecipeFullProps = {
     params: {
@@ -15,33 +14,19 @@ type RecipeFullProps = {
 }
 const RecipeFull = ({ params }: RecipeFullProps) => {
 
-    const [recipe, setRecipe] = useState<Recipe>()
-	const { userState } = useContext(UserContext)
+	const { userState } = useUserContext()
+	const recipe = useRecipeStore(state => state.recipe)
+	const isLoading = useRecipeStore(state => state.isLoading)
+	const setUserState = useRecipeStore(state => state.setUserState)
+	const fetchRecipe = useRecipeStore(state => state.fetchRecipe)
+	const toggleBookmark = useRecipeStore(state => state.toggleBookmark)
 
     const router = useRouter()
 
     useEffect(() => {
-        const fetchData = async (id: string) => {
-            if (userState.isLoggedin) {
-                fetch(`https://crimson-eagles-recipe-app.onrender.com/recipes/${ id }`, {
-                    headers: {
-                        'Authentication': `Bearer ${ userState.token }`,
-                    },
-                    credentials: 'include',
-                })
-                    .then(res => res.json())
-                    .then(res => setRecipe(res))
-					.catch(console.log)
-            } else {
-                fetch(`https://crimson-eagles-recipe-app.onrender.com/recipes/${ id }`)
-                    .then(res => res.json())
-                    .then(res => setRecipe(res))
-					.catch(console.log)
-            }
-        }
-
-        fetchData(params.id)
-    }, [userState, params.id])
+        setUserState(userState)
+		fetchRecipe(parseInt(params.id))
+    }, [userState, setUserState, fetchRecipe, params.id])
 
     const created_at = recipe?.created_at ? new Date(recipe.created_at)
         .toLocaleDateString('en-us', { year:"numeric", month:"short", day:"numeric"})
@@ -50,13 +35,8 @@ const RecipeFull = ({ params }: RecipeFullProps) => {
         .toLocaleDateString('en-us', { year:"numeric", month:"short", day:"numeric"})
         : 'N/A'
 
-    const handleBookmark = (recipe: Recipe) => {
-        fetch(`https://crimson-eagles-recipe-app.onrender.com/bookmarks/${ params.id }`)
-            .then(res => res.json())
-            .then(res => setRecipe({
-                ...recipe,
-                bookmarked: res,
-            }))
+    const handleBookmark = (id: number) => {
+        toggleBookmark(id)
     }
 
     return recipe ? (
@@ -64,9 +44,21 @@ const RecipeFull = ({ params }: RecipeFullProps) => {
             <img className="w-full mb-4 object-cover aspect-video"
                 src={ `https://source.unsplash.com/random/?food#${ new Date().getTime() }` }
                 alt={ recipe.title } />
-            <div className="absolute top-0 right-4 flex justify-end items-center gap-2">
-                { userState.isLoggedin && (
-                    <BookmarkButton recipe={ recipe } onBookmark={ handleBookmark } />
+            <div className="absolute top-4 right-4 flex justify-end items-center gap-2">
+                { userState.isLoggedIn && (
+                    <button className={`${ recipe.bookmarked ? "bg-green-500" : "bg-red-500" }
+                        flex items-center px-4 py-5 h-6 w-35 rounded-2xl text-white my-4`}
+                        onClick={ () => handleBookmark(recipe.id) }
+                    >
+                        { recipe.bookmarked ? (
+                        <Icon icon="carbon:checkmark-filled" />
+                        ) : (
+                        <Icon icon="carbon:add-filled" />
+                        ) }
+                        <span className="ml-2">
+                            { recipe.bookmarked ? "Bookmarked" : "Bookmark" }
+                        </span>
+                    </button>
                 ) }
                 <button
                     className="bg-red-500 text-white px-4 py-2 rounded-full"

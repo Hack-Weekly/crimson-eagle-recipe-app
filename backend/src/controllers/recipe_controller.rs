@@ -2,9 +2,9 @@ use diesel::prelude::*;
 use rocket::http::Status;
 use rocket::serde::json::Json;
 
-use crate::database;
 use crate::models::*;
 use crate::schema::recipes::dsl::*;
+use crate::LogsDbConn;
 
 use super::get_recipe_elements;
 use super::pagination;
@@ -26,14 +26,13 @@ use super::pagination;
     ),
 )]
 #[get("/recipes?<page>&<per_page>")]
-pub fn recipe(
+pub async fn recipe(
+    conn: LogsDbConn,
     page: Option<i64>,
     per_page: Option<i64>,
     key: Result<Jwt, NetworkResponse>,
 ) -> RecipeResponse<PaginatedResult<RecipeResultDTO>> {
-    let connection = &mut database::establish_connection();
-
-    let total: i64 = match recipes.count().get_result(connection) {
+    let total: i64 = match conn.run(|c| recipes.count().get_result(c)).await {
         Ok(c) => c,
         Err(_) => {
             return RecipeResponse::InternalServerError(String::from(
@@ -44,11 +43,15 @@ pub fn recipe(
 
     let (current_page, per_page, offset) = pagination(page, per_page, total);
 
-    let recipes_list = match recipes
-        .order(updated_at.desc())
-        .offset(offset)
-        .limit(per_page)
-        .load::<Recipe>(connection)
+    let recipes_list = match conn
+        .run(move |c| {
+            recipes
+                .order(updated_at.desc())
+                .offset(offset)
+                .limit(per_page)
+                .load::<Recipe>(c)
+        })
+        .await
     {
         Ok(res) => res,
         Err(_) => {
@@ -63,7 +66,7 @@ pub fn recipe(
         Err(_) => None,
     };
 
-    match get_recipe_elements(recipes_list, connection, user_id) {
+    match get_recipe_elements(recipes_list, conn, user_id).await {
         Ok(res) => {
             let paginated = PaginatedResult {
                 records: res,
@@ -97,15 +100,14 @@ pub fn recipe(
     )
 )]
 #[get("/recipes/search/<query>?<page>&<per_page>")]
-pub fn search(
+pub async fn search(
+    conn: LogsDbConn,
     query: String,
     page: Option<i64>,
     per_page: Option<i64>,
     key: Result<Jwt, NetworkResponse>,
 ) -> RecipeResponse<PaginatedResult<RecipeResultDTO>> {
-    let connection = &mut database::establish_connection();
-
-    let total: i64 = match recipes.count().get_result(connection) {
+    let total: i64 = match conn.run(|c| recipes.count().get_result(c)).await {
         Ok(c) => c,
         Err(_) => {
             return RecipeResponse::InternalServerError(String::from(
@@ -116,12 +118,16 @@ pub fn search(
 
     let (current_page, per_page, offset) = pagination(page, per_page, total);
 
-    let recipes_list = match recipes
-        .filter(title.ilike(format!("%{}%", query)))
-        .order(updated_at.desc())
-        .offset(offset)
-        .limit(per_page)
-        .load::<Recipe>(connection)
+    let recipes_list = match conn
+        .run(move |c| {
+            recipes
+                .filter(title.ilike(format!("%{}%", query)))
+                .order(updated_at.desc())
+                .offset(offset)
+                .limit(per_page)
+                .load::<Recipe>(c)
+        })
+        .await
     {
         Ok(res) => res,
         Err(_) => {
@@ -136,7 +142,7 @@ pub fn search(
         Err(_) => None,
     };
 
-    match get_recipe_elements(recipes_list, connection, user_id) {
+    match get_recipe_elements(recipes_list, conn, user_id).await {
         Ok(res) => {
             let paginated = PaginatedResult {
                 records: res,
@@ -168,13 +174,15 @@ pub fn search(
     )
 )]
 #[get("/recipes/<recipe_id>")]
-pub fn single_recipe(
+pub async fn single_recipe(
+    conn: LogsDbConn,
     recipe_id: i32,
     key: Result<Jwt, NetworkResponse>,
 ) -> RecipeResponse<RecipeResultDTO> {
-    let connection = &mut database::establish_connection();
-
-    let recipes_list = match recipes.find(recipe_id).load::<Recipe>(connection) {
+    let recipes_list = match conn
+        .run(move |c| recipes.find(recipe_id).load::<Recipe>(c))
+        .await
+    {
         Ok(res) => res,
         Err(_) => {
             return RecipeResponse::InternalServerError(String::from(
@@ -188,7 +196,7 @@ pub fn single_recipe(
         Err(_) => None,
     };
 
-    match get_recipe_elements(recipes_list, connection, user_id) {
+    match get_recipe_elements(recipes_list, conn, user_id).await {
         Ok(res) => match res.first() {
             Some(r) => RecipeResponse::Ok(Json(r.clone())),
             None => RecipeResponse::NotFound(String::from("The recipe was not found.")),
@@ -218,16 +226,38 @@ pub fn single_recipe(
     ),
 )]
 #[delete("/recipes/<del_id>")]
-pub fn delete(del_id: i32) -> Result<Status, Status> {
+pub async fn delete(
+    conn: LogsDbConn,
+    del_id: i32,
+    key: Result<Jwt, NetworkResponse>,
+) -> Result<Status, RecipeResponse<RecipeResultDTO>> {
     use crate::schema::recipes;
 
-    let connection = &mut database::establish_connection();
-    let num_deleted = diesel::delete(recipes::table.find(del_id))
-        .execute(connection)
-        .map_err(|_| Status::InternalServerError)?;
+    match key {
+        Ok(k) => k.claims.subject_id,
+        Err(_) => {
+            return Err(RecipeResponse::Unauthorized(String::from(
+                "Please log in to be able to delete recipes.",
+            )))
+        }
+    };
+    // TODO: Fix deletion error:
+    // "update or delete on table "recipes" violates foreign key constraint "recipes_users_recipe_id_fkey" on table "recipes_users""
+    let num_deleted = match conn
+        .run(move |c| diesel::delete(recipes::table.find(del_id)).execute(c))
+        .await
+    {
+        Ok(num) => num,
+        Err(err) => {
+            return Err(RecipeResponse::InternalServerError(format!(
+                "Database error while deleting the recipe: {}",
+                err.to_string()
+            )))
+        }
+    };
 
     match num_deleted {
-        0 => Err(Status::NotFound),
-        _ => Ok(Status::Ok),
+        0 => Err(RecipeResponse::NotFound(String::from("Recipe not found."))),
+        _ => Ok(Status::NoContent),
     }
 }

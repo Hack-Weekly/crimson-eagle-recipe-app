@@ -1,7 +1,7 @@
+"use client"
 
-import { UserContext } from "@/context/user-state";
 import { Icon } from "@iconify/react";
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import PasswordChecklist from "react-password-checklist"
 
 export const getJwtToken = (): string => {
@@ -13,7 +13,6 @@ const UserAuth: React.FC = () => {
     const [userName, setUserName] = useState("");
     const [userPassword, setUserPassword] = useState("");
     const [showForm, setShowForm] = useState<boolean>(false);
-	const {userState, setUserState} = useContext(UserContext);
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
     const [error, setError] = useState<string>("");
 
@@ -46,10 +45,6 @@ const UserAuth: React.FC = () => {
             localStorage.setItem('jwtToken', AuthToken);
             setIsLoggedIn(true);
             setShowForm(false);
-            setUserState({
-                isLoggedin: true,
-                token: AuthToken,
-            })
           } else if (response) {
             const errorMessage = await response.text();
             setError(errorMessage);
@@ -79,10 +74,6 @@ const UserAuth: React.FC = () => {
     const logOutUser = () => {
         localStorage.removeItem('jwtToken');
         setIsLoggedIn(false);
-        setUserState({
-            isLoggedin: false,
-            token: null,
-        })
         console.log('Token cleared, user logged out');
     };
 
@@ -100,19 +91,15 @@ const UserAuth: React.FC = () => {
         if (jwtToken) {
           // if token exists, set user as logged in
           setIsLoggedIn(true);
-          setUserState({
-            isLoggedin: true,
-            token: jwtToken,
-          })
         }
-      }, [setUserState]);
+      }, []);
 
     // Render error message if it exists
     const renderError = error ? <div className="text-red-500 mt-2">{error}</div> : null;
 
     return (
         <div>
-            {userState.isLoggedin || isLoggedIn ? (
+            {isLoggedIn ? (
                 <button onClick={logOutUser} className="flex justify-center items-center px-2 py-5 h-6 w-40 bg-red-500 rounded-2xl text-white">
                     <Icon icon="basil:user-solid" className="w-7 h-8" />
                     <span className="text-lg font-serif-extrabold"> Log Out </span>
